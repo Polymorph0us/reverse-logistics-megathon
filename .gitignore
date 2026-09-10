@@ -22,3 +22,15 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Java / Maven
+target/
+*.class
+
+# Fabric Network
+fabric-network/organizations/
+fabric-network/channel-artifacts/
+
+# Local proxy
+powershell.cmd
+

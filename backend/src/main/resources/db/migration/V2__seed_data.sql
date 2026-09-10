@@ -1,0 +1,53 @@
+-- Password for all seed users is 'password'
+-- Hash: $2a$10$n/P912O4LntVp.yFmZ.E9.O/eG6pXWp3.K8q43f2j.B03o.h4S1Pq
+
+-- Organizations
+INSERT INTO organizations (id, name, type, license_number, city, state) VALUES
+('11111111-1111-1111-1111-111111111111', 'PharmaCorp Inc', 'MANUFACTURER', 'MFG-1001', 'Mumbai', 'MH'),
+('11111111-1111-1111-1111-111111111112', 'MediLife Makers', 'MANUFACTURER', 'MFG-1002', 'Pune', 'MH'),
+('22222222-2222-2222-2222-222222222221', 'National Distributors', 'DISTRIBUTOR', 'DIST-2001', 'Delhi', 'DL'),
+('22222222-2222-2222-2222-222222222222', 'Regional Med Supply', 'DISTRIBUTOR', 'DIST-2002', 'Bangalore', 'KA'),
+('22222222-2222-2222-2222-222222222223', 'West Coast Logistics', 'DISTRIBUTOR', 'DIST-2003', 'Ahmedabad', 'GJ'),
+('33333333-3333-3333-3333-333333333331', 'City Pharmacy', 'RETAILER', 'RET-3001', 'Mumbai', 'MH'),
+('33333333-3333-3333-3333-333333333332', 'HealthPlus Store', 'RETAILER', 'RET-3002', 'Pune', 'MH'),
+('33333333-3333-3333-3333-333333333333', 'Corner Drugstore', 'RETAILER', 'RET-3003', 'Delhi', 'DL'),
+('33333333-3333-3333-3333-333333333334', 'Wellness Meds', 'RETAILER', 'RET-3004', 'Bangalore', 'KA'),
+('44444444-4444-4444-4444-444444444441', 'EcoWaste Disposal', 'WASTE_FACILITY', 'WST-4001', 'Nagpur', 'MH'),
+('55555555-5555-5555-5555-555555555551', 'CDSCO Regulator', 'REGULATOR', 'REG-5001', 'Delhi', 'DL');
+
+-- Users
+INSERT INTO users (id, name, email, password_hash, role, organization_id) VALUES
+('66666666-6666-6666-6666-666666666661', 'Alice Manufacturer', 'alice@pharmacorp.com', '$2a$10$n/P912O4LntVp.yFmZ.E9.O/eG6pXWp3.K8q43f2j.B03o.h4S1Pq', 'MANUFACTURER', '11111111-1111-1111-1111-111111111111'),
+('66666666-6666-6666-6666-666666666662', 'Bob Distributor', 'bob@natdist.com', '$2a$10$n/P912O4LntVp.yFmZ.E9.O/eG6pXWp3.K8q43f2j.B03o.h4S1Pq', 'DISTRIBUTOR', '22222222-2222-2222-2222-222222222221'),
+('66666666-6666-6666-6666-666666666663', 'Charlie Retailer', 'charlie@citypharmacy.com', '$2a$10$n/P912O4LntVp.yFmZ.E9.O/eG6pXWp3.K8q43f2j.B03o.h4S1Pq', 'RETAILER', '33333333-3333-3333-3333-333333333331'),
+('66666666-6666-6666-6666-666666666664', 'Dave Waste', 'dave@ecowaste.com', '$2a$10$n/P912O4LntVp.yFmZ.E9.O/eG6pXWp3.K8q43f2j.B03o.h4S1Pq', 'WASTE_FACILITY', '44444444-4444-4444-4444-444444444441'),
+('66666666-6666-6666-6666-666666666665', 'Eve Regulator', 'eve@cdsco.gov.in', '$2a$10$n/P912O4LntVp.yFmZ.E9.O/eG6pXWp3.K8q43f2j.B03o.h4S1Pq', 'REGULATOR', '55555555-5555-5555-5555-555555555551');
+
+-- Products
+INSERT INTO products (product_id, product_name, generic_name, brand_name, manufacturer_id, dosage_form, strength, unit_type) VALUES
+('77777777-7777-7777-7777-777777777771', 'Paracetamol 500mg', 'Paracetamol', 'Crocin', '11111111-1111-1111-1111-111111111111', 'Tablet', '500mg', 'STRIP'),
+('77777777-7777-7777-7777-777777777772', 'Amoxicillin 250mg', 'Amoxicillin', 'Amoxil', '11111111-1111-1111-1111-111111111111', 'Capsule', '250mg', 'BOTTLE'),
+('77777777-7777-7777-7777-777777777773', 'Ibuprofen 400mg', 'Ibuprofen', 'Brufen', '11111111-1111-1111-1111-111111111112', 'Tablet', '400mg', 'STRIP'),
+('77777777-7777-7777-7777-777777777774', 'Cough Syrup 100ml', 'Dextromethorphan', 'Corex', '11111111-1111-1111-1111-111111111112', 'Syrup', '10mg/5ml', 'BOTTLE'),
+('77777777-7777-7777-7777-777777777775', 'Vitamin C 1000mg', 'Ascorbic Acid', 'Limcee', '11111111-1111-1111-1111-111111111111', 'Tablet', '1000mg', 'STRIP');
+
+-- Batches
+INSERT INTO batches (batch_id, batch_number, product_id, manufacturer_id, manufacturing_date, expiry_date, original_quantity, current_quantity, unit, current_status, current_owner_id, risk_score, risk_level) VALUES
+-- Active Batch with Retailer
+('88888888-8888-8888-8888-888888888881', 'BATCH-001', '77777777-7777-7777-7777-777777777771', '11111111-1111-1111-1111-111111111111', '2023-01-01', '2026-01-01', 1000, 500, 'STRIP', 'ACTIVE', '33333333-3333-3333-3333-333333333331', 0, 'LOW'),
+-- Expiring Soon Batch (Demo Target: ABC123)
+('88888888-8888-8888-8888-888888888882', 'ABC123', '77777777-7777-7777-7777-777777777772', '11111111-1111-1111-1111-111111111111', '2023-06-01', CURRENT_DATE + INTERVAL '20 days', 500, 100, 'BOTTLE', 'EXPIRING_SOON', '33333333-3333-3333-3333-333333333331', 10, 'LOW'),
+-- Expired Batch with Distributor
+('88888888-8888-8888-8888-888888888883', 'BATCH-003', '77777777-7777-7777-7777-777777777773', '11111111-1111-1111-1111-111111111112', '2022-01-01', '2024-01-01', 200, 200, 'STRIP', 'EXPIRED', '22222222-2222-2222-2222-222222222221', 40, 'MEDIUM'),
+-- Destroyed Batch
+('88888888-8888-8888-8888-888888888884', 'BATCH-004', '77777777-7777-7777-7777-777777777774', '11111111-1111-1111-1111-111111111112', '2021-01-01', '2023-01-01', 100, 100, 'BOTTLE', 'DESTROYED', '11111111-1111-1111-1111-111111111112', 0, 'LOW'),
+-- Batch Scheduled for Destruction
+('88888888-8888-8888-8888-888888888885', 'BATCH-005', '77777777-7777-7777-7777-777777777775', '11111111-1111-1111-1111-111111111111', '2022-05-01', '2024-05-01', 300, 300, 'STRIP', 'SCHEDULED_FOR_DESTRUCTION', '11111111-1111-1111-1111-111111111111', 20, 'LOW');
+
+-- Invalid Registry Entry for the destroyed batch
+INSERT INTO invalid_registry (id, manufacturer_id, batch_number, manufacturing_date, expiry_date, invalidated_quantity, reason) VALUES
+('99999999-9999-9999-9999-999999999991', '11111111-1111-1111-1111-111111111112', 'BATCH-004', '2021-01-01', '2023-01-01', 100, 'DESTROYED_BY_FACILITY');
+
+-- Some initial Batch Events
+INSERT INTO batch_events (batch_id, event_type, new_status, actor, organization_id, role, hash) VALUES
+('88888888-8888-8888-8888-888888888884', 'DESTRUCTION_CONFIRMED', 'DESTROYED', 'Dave Waste', '44444444-4444-4444-4444-444444444441', 'WASTE_FACILITY', 'dummyhash12345');

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react"
 import { BrowserRouter as Router, Routes, Route, Navigate, useSearchParams } from "react-router-dom"
 import { useAuthStore } from "./store/useAuthStore"
 import { useEffect } from "react"
@@ -27,7 +28,6 @@ import { BatchPassportView } from "./pages/shared/BatchPassportView"
 
 // Placeholder pages to resolve imports
 const Placeholder = ({ title }: { title: string }) => <div className="p-6"><h1>{title}</h1><p>Under construction...</p></div>
-import type { ReactNode } from "react"
 
 function RequireAuth({ children, allowedRoles }: { children: ReactNode, allowedRoles?: string[] }) {
   const { user } = useAuthStore()

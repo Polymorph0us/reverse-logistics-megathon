@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5434/reversechaindb
+    driver-class-name: org.postgresql.Driver
+    username: postgres
+    password: Rpharish@1
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: false
+url: Matches your PostgreSQL host, port (5432), and database name (reversechaindb).

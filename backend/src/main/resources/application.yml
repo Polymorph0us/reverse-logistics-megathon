@@ -1,0 +1,48 @@
+server:
+  port: ${PORT:8081}
+
+spring:
+  application:
+    name: reversechain
+  profiles:
+    default: local
+  jackson:
+    serialization:
+      fail-on-empty-beans: false
+
+  datasource:
+    url: jdbc:postgresql://localhost:5433/reversechaindb
+    username: rc_user
+    password: rc_password
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+jwt:
+  secret: 4d284f18166d48259f63abf5bc439d57a9e52e468e82fa08842af58df24b17e4
+  expiration: 86400000 # 1 day
+
+fraud:
+  thresholds:
+    low: 20
+    medium: 50
+    high: 80
+
+fabric:
+  enabled: true # Connects to local Docker Fabric network (falls back automatically if offline)
+  channel-name: pharma-channel
+  chaincode-name: pharma-contract
+  peer-endpoint: localhost:7051
+  override-auth: peer0.manufacturer.pharma.com
+  msp-id: ManufacturerMSP
+  crypto-path: ../fabric-network/organizations/peerOrganizations/manufacturer.pharma.com
