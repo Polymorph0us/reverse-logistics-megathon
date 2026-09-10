@@ -1,7 +1,7 @@
 package com.pharma.reversechain.controller;
 
 import com.pharma.reversechain.entity.MovementEvent;
-import com.pharma.reversechain.entity.User;
+import com.pharma.reversechain.security.UserDetailsImpl;
 import com.pharma.reversechain.service.MovementService;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -20,13 +20,13 @@ public class MovementController {
     private final MovementService movementService;
 
     @PostMapping
-    public ResponseEntity<MovementEvent> recordMovement(@RequestBody MovementRequest request, @AuthenticationPrincipal User actor) {
+    public ResponseEntity<MovementEvent> recordMovement(@RequestBody MovementRequest request, @AuthenticationPrincipal UserDetailsImpl actor) {
         MovementEvent event = movementService.recordMovement(
             request.getTrackingId(),
             request.getQuantityReceived(),
             request.getLocation(),
             request.getNotes(),
-            actor
+            actor.getUser()
         );
         return ResponseEntity.ok(event);
     }

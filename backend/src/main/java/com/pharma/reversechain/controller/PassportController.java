@@ -1,7 +1,7 @@
 package com.pharma.reversechain.controller;
 
 import com.pharma.reversechain.dto.MedicinePassportResponse;
-import com.pharma.reversechain.entity.User;
+import com.pharma.reversechain.security.UserDetailsImpl;
 import com.pharma.reversechain.service.PassportService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +19,7 @@ public class PassportController {
     private final PassportService passportService;
 
     @GetMapping("/{trackingId}")
-    public ResponseEntity<MedicinePassportResponse> getPassport(@PathVariable String trackingId, @AuthenticationPrincipal User actor) {
-        return ResponseEntity.ok(passportService.getPassport(trackingId, actor));
+    public ResponseEntity<MedicinePassportResponse> getPassport(@PathVariable String trackingId, @AuthenticationPrincipal UserDetailsImpl actor) {
+        return ResponseEntity.ok(passportService.getPassport(trackingId, actor.getUser()));
     }
 }

@@ -1,7 +1,7 @@
 package com.pharma.reversechain.controller;
 
 import com.pharma.reversechain.entity.MedicinePassport;
-import com.pharma.reversechain.entity.User;
+import com.pharma.reversechain.security.UserDetailsImpl;
 import com.pharma.reversechain.service.MedicalRepService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +22,7 @@ public class MedicalRepController {
     private final MedicalRepService medicalRepService;
 
     @GetMapping("/dashboard")
-    public ResponseEntity<List<MedicinePassport>> getDashboard(@AuthenticationPrincipal User actor) {
-        return ResponseEntity.ok(medicalRepService.getExpiringPassports(actor));
+    public ResponseEntity<List<MedicinePassport>> getDashboard(@AuthenticationPrincipal UserDetailsImpl actor) {
+        return ResponseEntity.ok(medicalRepService.getExpiringPassports(actor.getUser()));
     }
 }

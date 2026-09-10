@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { receiveReturn } from "@/api/mockApi"
 import type { ReceiveReturnResponse } from "@/api/types"
 import { useSharedStore } from "@/store/useSharedStore"
@@ -9,27 +9,30 @@ import { Card } from "@/components/ui/card"
 import { AlertTriangle, PackageCheck } from "lucide-react"
 
 export function PendingReturns() {
-  const returns = useSharedStore(state => state.returns.filter(r => r.status === "AWAITING_DISTRIBUTOR"))
-  const [receivedQtyMap, setReceivedQtyMap] = useState<Record<string, number>>({})
+  const allReturns = useSharedStore(state => state.returns)
+  const returns = useMemo(() => allReturns.filter(r => r.status === "AWAITING_DISTRIBUTOR"), [allReturns])
+  
+  const [receivedQtyMap, setReceivedQtyMap] = useState<Record<string, string>>({})
   const [result, setResult] = useState<ReceiveReturnResponse | null>(null)
   const [submitting, setSubmitting] = useState<string | null>(null)
 
   useEffect(() => {
-    const qtys: Record<string, number> = {}
+    const qtys: Record<string, string> = {}
     returns.forEach(r => {
       if (receivedQtyMap[r.returnId] === undefined) {
         // default to 94 to show off discrepancy if requested is 100
-        qtys[r.returnId] = r.requestedQuantity === 100 ? 94 : r.requestedQuantity
+        qtys[r.returnId] = r.requestedQuantity === 100 ? "94" : r.requestedQuantity.toString()
       }
     })
     if (Object.keys(qtys).length > 0) {
       setReceivedQtyMap(prev => ({...prev, ...qtys}))
     }
-  }, [returns])
+  }, [returns, receivedQtyMap])
 
   const handleReceive = async (returnId: string, expectedQty: number) => {
     setSubmitting(returnId)
-    const qty = receivedQtyMap[returnId] ?? expectedQty
+    const qtyStr = receivedQtyMap[returnId]
+    const qty = (qtyStr && qtyStr !== "") ? parseInt(qtyStr) : expectedQty
     const res = await receiveReturn(returnId, qty, expectedQty)
     setResult(res)
     setSubmitting(null)
@@ -102,7 +105,7 @@ export function PendingReturns() {
                   <Input 
                     type="number" 
                     value={receivedQtyMap[req.returnId] ?? ''} 
-                    onChange={(e) => setReceivedQtyMap(p => ({...p, [req.returnId]: parseInt(e.target.value) || 0}))} 
+                    onChange={(e) => setReceivedQtyMap(p => ({...p, [req.returnId]: e.target.value}))} 
                     className="w-24 h-8"
                   />
                 </TableCell>

@@ -38,8 +38,18 @@ fraud:
     medium: 50
     high: 80
 
-
 # Dwell time thresholds (in days) for DELAYED_DISPATCH alerts
 dwell-time:
   warning-threshold-days: 7
   critical-threshold-days: 14
+
+fabric:
+  enabled: false
+blockchain:
+  mode: local
+  channel-name: pharma-channel
+  chaincode-name: pharma-contract
+  peer-endpoint: localhost:7051
+  override-auth: peer0.manufacturer.pharma.com
+  msp-id: ManufacturerMSP
+  crypto-path: ../fabric-network/organizations/peerOrganizations/manufacturer.pharma.com

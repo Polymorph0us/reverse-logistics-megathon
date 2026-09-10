@@ -9,9 +9,6 @@ import {
   ArrowLeft, 
   FileText, 
   CheckCircle2, 
-  AlertOctagon, 
-  Building2, 
-  Calendar,
   Lock
 } from "lucide-react"
 
@@ -95,12 +92,12 @@ export function Investigation() {
               </div>
               <div>
                 <span className="text-gray-500 block text-xs">Suspect Organization</span>
-                <span className="font-medium text-gray-900">{alert.organizationName}</span>
+                <span className="font-medium text-gray-900">{alert.organization}</span>
               </div>
               <div>
                 <span className="text-gray-500 block text-xs">Detection Timestamp</span>
                 <span className="font-medium text-gray-900">
-                  {new Date(alert.createdAt).toLocaleString()}
+                  {new Date(alert.detectedAt).toLocaleString()}
                 </span>
               </div>
             </div>
@@ -108,7 +105,7 @@ export function Investigation() {
             <div>
               <h3 className="text-sm font-semibold text-gray-800 mb-2">Detailed Narrative</h3>
               <p className="text-sm text-gray-600 bg-red-50/50 p-4 rounded-lg border border-red-100">
-                {alert.description}
+                {alert.message}
               </p>
             </div>
 
