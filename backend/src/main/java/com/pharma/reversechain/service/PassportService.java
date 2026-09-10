@@ -22,6 +22,7 @@ public class PassportService {
     private final OrganizationRepository organizationRepository;
     private final InvalidRegistryRepository invalidRegistryRepository;
     private final FraudDetectionService fraudDetectionService;
+    private final ExpiryEngine expiryEngine;
 
     public MedicinePassportResponse getPassport(String trackingId, User actor) {
         MedicinePassport passport = passportRepository.findById(trackingId)
@@ -73,8 +74,11 @@ public class PassportService {
         response.setCurrentQuantity(passport.getCurrentQuantity());
         response.setOriginalQuantity(passport.getOriginalQuantity());
         response.setStatus(passport.getStatus());
+        response.setDisplayStatus(expiryEngine.calculateDisplayStatus(passport));
+        response.setMessage(expiryEngine.calculateExpiryMessage(passport));
         response.setRiskLevel(passport.getRiskLevel());
         response.setNextAction(passport.getNextAction());
+        response.setNextActionCode(passport.getNextAction() != null ? passport.getNextAction().toUpperCase().replace(" ", "_") : "NONE");
         response.setUpdatedAt(passport.getUpdatedAt());
 
         response.setHistory(history.stream().map(this::mapToEventResponse).collect(Collectors.toList()));

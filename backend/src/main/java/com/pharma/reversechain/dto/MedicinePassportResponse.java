@@ -19,8 +19,11 @@ public class MedicinePassportResponse {
     private Integer currentQuantity;
     private Integer originalQuantity;
     private String status;
+    private String displayStatus;
+    private String message;
     private String riskLevel;
     private String nextAction;
+    private String nextActionCode;
     private LocalDateTime updatedAt;
     
     private List<MovementEventResponse> history;

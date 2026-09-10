@@ -85,7 +85,13 @@ public class Certificate {
     @Column(name = "certificate_hash", nullable = false, unique = true)
     private String certificateHash;
 
-    @Column(name = "blockchain_tx_id", nullable = false)
+    @Column(name = "tracking_id")
+    private String trackingId;
+
+    @Column(name = "document_content", columnDefinition = "TEXT")
+    private String documentContent;
+
+    @Column(name = "blockchain_tx_id")
     private String blockchainTxId;
 
     @Column(name = "file_storage_reference")

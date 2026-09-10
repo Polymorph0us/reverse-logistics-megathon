@@ -3,6 +3,7 @@ package com.pharma.reversechain.service;
 import com.pharma.reversechain.entity.*;
 import com.pharma.reversechain.repository.BatchRepository;
 import com.pharma.reversechain.repository.ReturnRequestRepository;
+import com.pharma.reversechain.repository.MedicinePassportRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,9 @@ public class ReturnService {
     private final BatchRepository batchRepository;
     private final BatchStateMachine stateMachine;
     private final FraudDetectionService fraudDetectionService;
+    private final ConsignmentService consignmentService;
+    private final DisputeService disputeService;
+    private final MedicinePassportRepository passportRepository;
 
     @Transactional
     public ReturnRequest initiateReturn(UUID batchId, Integer quantity, String reason, String condition, String evidence, User actor) {
@@ -71,15 +75,17 @@ public class ReturnService {
             batch.setRiskLevel(RiskLevel.HIGH);
             batch.setRiskScore(batch.getRiskScore() + 60);
             
-            fraudDetectionService.generateAlert(
-                "RETURN_QUANTITY_DISCREPANCY",
-                AlertSeverity.HIGH,
-                batch,
-                batch.getBatchNumber(),
-                "DISTRIBUTOR_RECEIPT",
-                actor.getOrganization(),
-                "Quantity discrepancy detected during distributor receipt. Expected: " + request.getRequestedQuantity() + ", Received: " + receivedQuantity
-            );
+            // Generate Fraud Alert via FraudDetectionService is already done inside DisputeService, but keeping this old one or replacing it:
+            // We'll rely on the one in DisputeService.
+            String trackingId = passportRepository.findByBatchId(batch.getBatchId()).stream().findFirst()
+                .map(MedicinePassport::getTrackingId).orElse("UNKNOWN");
+
+            disputeService.createDispute(trackingId, request.getRequestedQuantity(), receivedQuantity, actor, "Quantity discrepancy detected during distributor receipt.");
+        } else {
+            String trackingId = passportRepository.findByBatchId(batch.getBatchId()).stream().findFirst()
+                .map(MedicinePassport::getTrackingId).orElse("UNKNOWN");
+            
+            consignmentService.createReturnBag(trackingId, batch.getBatchId(), receivedQuantity, actor);
         }
         batch.setCurrentOwnerId(actor.getOrganizationId());
         batchRepository.save(batch);

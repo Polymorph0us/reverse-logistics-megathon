@@ -30,7 +30,7 @@ public class FraudAlert {
     @Column(name = "batch_id")
     private UUID batchId;
 
-    @Column(name = "batch_number", nullable = false)
+    @Column(name = "batch_number")
     private String batchNumber;
 
     @Column(name = "detected_at", nullable = false)

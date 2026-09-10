@@ -1,25 +1,15 @@
 -- V4__certificates_expansion.sql
--- Expand certificates table with full batch identity, product info, and file storage reference
+-- Expand certificates table with tracking, document content, and fix constraints
 
-ALTER TABLE certificates ADD COLUMN IF NOT EXISTS product_id UUID;
-ALTER TABLE certificates ADD COLUMN IF NOT EXISTS batch_number VARCHAR(255);
-ALTER TABLE certificates ADD COLUMN IF NOT EXISTS manufacturer_id UUID;
-ALTER TABLE certificates ADD COLUMN IF NOT EXISTS manufacturing_date DATE;
-ALTER TABLE certificates ADD COLUMN IF NOT EXISTS expiry_date DATE;
-ALTER TABLE certificates ADD COLUMN IF NOT EXISTS destruction_method VARCHAR(500);
-ALTER TABLE certificates ADD COLUMN IF NOT EXISTS facility_license VARCHAR(255);
-ALTER TABLE certificates ADD COLUMN IF NOT EXISTS file_storage_reference VARCHAR(500);
-ALTER TABLE certificates ADD COLUMN IF NOT EXISTS issuer_id UUID;
-ALTER TABLE certificates ADD COLUMN IF NOT EXISTS issued_at TIMESTAMP;
+-- Add new columns if not already present
+ALTER TABLE certificates ADD COLUMN IF NOT EXISTS tracking_id VARCHAR(50);
+ALTER TABLE certificates ADD COLUMN IF NOT EXISTS document_content TEXT;
+
+-- Make blockchain_tx_id optional (no longer required since blockchain is removed)
+ALTER TABLE certificates ALTER COLUMN blockchain_tx_id DROP NOT NULL;
 
 -- Update existing certificates to have issued_at if null
 UPDATE certificates SET issued_at = created_at WHERE issued_at IS NULL;
-
--- Add foreign key constraints
-ALTER TABLE certificates ADD CONSTRAINT fk_certificates_product FOREIGN KEY (product_id) REFERENCES products(product_id);
-ALTER TABLE certificates ADD CONSTRAINT fk_certificates_manufacturer FOREIGN KEY (manufacturer_id) REFERENCES organizations(organization_id);
-ALTER TABLE certificates ADD CONSTRAINT fk_certificates_batch FOREIGN KEY (batch_id) REFERENCES batches(batch_id);
-ALTER TABLE certificates ADD CONSTRAINT fk_certificates_issuer FOREIGN KEY (issuer_id) REFERENCES users(user_id);
 
 -- Add unique constraint on certificate_hash if not exists
 DO $$
