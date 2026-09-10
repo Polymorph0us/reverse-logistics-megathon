@@ -1,4 +1,4 @@
-#!/bin/bash
+﻿#!/bin/bash
 set -e
 
 CHANNEL_NAME=${1:-"pharma-channel"}

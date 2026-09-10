@@ -5,13 +5,13 @@ Organizations:
     ID: OrdererMSP
     MSPDir: ../organizations/ordererOrganizations/pharma.com/msp
     Policies:
-      Reader:
+      Readers:
         Type: Signature
         Rule: "OR('OrdererMSP.member')"
-      Writer:
+      Writers:
         Type: Signature
         Rule: "OR('OrdererMSP.member')"
-      Admin:
+      Admins:
         Type: Signature
         Rule: "OR('OrdererMSP.admin')"
 
@@ -20,13 +20,13 @@ Organizations:
     ID: ManufacturerMSP
     MSPDir: ../organizations/peerOrganizations/manufacturer.pharma.com/msp
     Policies:
-      Reader:
+      Readers:
         Type: Signature
         Rule: "OR('ManufacturerMSP.admin', 'ManufacturerMSP.peer', 'ManufacturerMSP.client')"
-      Writer:
+      Writers:
         Type: Signature
         Rule: "OR('ManufacturerMSP.admin', 'ManufacturerMSP.client')"
-      Admin:
+      Admins:
         Type: Signature
         Rule: "OR('ManufacturerMSP.admin')"
       Endorsement:
@@ -41,13 +41,13 @@ Organizations:
     ID: DistributorMSP
     MSPDir: ../organizations/peerOrganizations/distributor.pharma.com/msp
     Policies:
-      Reader:
+      Readers:
         Type: Signature
         Rule: "OR('DistributorMSP.admin', 'DistributorMSP.peer', 'DistributorMSP.client')"
-      Writer:
+      Writers:
         Type: Signature
         Rule: "OR('DistributorMSP.admin', 'DistributorMSP.client')"
-      Admin:
+      Admins:
         Type: Signature
         Rule: "OR('DistributorMSP.admin')"
       Endorsement:
@@ -62,13 +62,13 @@ Organizations:
     ID: RetailerMSP
     MSPDir: ../organizations/peerOrganizations/retailer.pharma.com/msp
     Policies:
-      Reader:
+      Readers:
         Type: Signature
         Rule: "OR('RetailerMSP.admin', 'RetailerMSP.peer', 'RetailerMSP.client')"
-      Writer:
+      Writers:
         Type: Signature
         Rule: "OR('RetailerMSP.admin', 'RetailerMSP.client')"
-      Admin:
+      Admins:
         Type: Signature
         Rule: "OR('RetailerMSP.admin')"
       Endorsement:
@@ -83,13 +83,13 @@ Organizations:
     ID: WasteFacilityMSP
     MSPDir: ../organizations/peerOrganizations/wastefacility.pharma.com/msp
     Policies:
-      Reader:
+      Readers:
         Type: Signature
         Rule: "OR('WasteFacilityMSP.admin', 'WasteFacilityMSP.peer', 'WasteFacilityMSP.client')"
-      Writer:
+      Writers:
         Type: Signature
         Rule: "OR('WasteFacilityMSP.admin', 'WasteFacilityMSP.client')"
-      Admin:
+      Admins:
         Type: Signature
         Rule: "OR('WasteFacilityMSP.admin')"
       Endorsement:
@@ -104,13 +104,13 @@ Organizations:
     ID: ControllerMSP
     MSPDir: ../organizations/peerOrganizations/controller.pharma.com/msp
     Policies:
-      Reader:
+      Readers:
         Type: Signature
         Rule: "OR('ControllerMSP.admin', 'ControllerMSP.peer', 'ControllerMSP.client')"
-      Writer:
+      Writers:
         Type: Signature
         Rule: "OR('ControllerMSP.admin', 'ControllerMSP.client')"
-      Admin:
+      Admins:
         Type: Signature
         Rule: "OR('ControllerMSP.admin')"
       Endorsement:

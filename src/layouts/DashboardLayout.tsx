@@ -1,10 +1,14 @@
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom"
 import { useAuthStore } from "@/store/useAuthStore"
-import { LayoutDashboard, Package, AlertTriangle, FileText, LogOut, Activity, ShieldAlert } from "lucide-react"
+import { useSharedStore } from "@/store/useSharedStore"
+import { LayoutDashboard, Package, AlertTriangle, FileText, LogOut, Activity, ShieldAlert, Bell } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export function DashboardLayout() {
-  const { user, logout } = useAuthStore()
+  const { user, loginUser, logout } = useAuthStore()
+  const notifications = useSharedStore(state => state.notifications)
+  const unreadCount = notifications.filter(n => !n.read).length
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -56,9 +60,11 @@ export function DashboardLayout() {
           <span className="font-bold text-lg text-gray-900">RxTrack</span>
         </div>
         
-        <div className="px-6 py-4 border-b border-gray-100">
-          <p className="text-sm font-medium text-gray-900">{user.organizationName}</p>
-          <p className="text-xs text-gray-500 capitalize">{user.role.toLowerCase()}</p>
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-gray-900">{user.organizationName}</p>
+            <p className="text-xs text-gray-500 capitalize">{user.role.toLowerCase()}</p>
+          </div>
         </div>
 
         <nav className="flex-1 px-4 py-4 space-y-1">
@@ -90,8 +96,35 @@ export function DashboardLayout() {
         </div>
       </div>
 
-      <main className="flex-1 overflow-auto bg-gray-50/50">
-        <div className="p-8">
+      <main className="flex-1 overflow-hidden flex flex-col bg-gray-50/50">
+        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-end px-8 space-x-6">
+          <div className="flex items-center space-x-2">
+            <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Quick Switch:</span>
+            <Select value={user.role} onValueChange={(v) => loginUser(v as any)}>
+              <SelectTrigger className="w-40 h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="RETAILER">Retailer</SelectItem>
+                <SelectItem value="DISTRIBUTOR">Distributor</SelectItem>
+                <SelectItem value="MANUFACTURER">Manufacturer</SelectItem>
+                <SelectItem value="WASTE_FACILITY">Waste Facility</SelectItem>
+                <SelectItem value="REGULATOR">Regulator</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <button className="relative p-2 text-gray-400 hover:text-gray-500 transition-colors">
+            <Bell className="w-5 h-5" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white animate-in zoom-in">
+                {unreadCount}
+              </span>
+            )}
+          </button>
+        </header>
+        
+        <div className="flex-1 overflow-auto p-8">
           <Outlet />
         </div>
       </main>

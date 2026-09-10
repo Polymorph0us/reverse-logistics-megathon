@@ -98,8 +98,8 @@ export interface FraudAlert {
 
 export interface BatchVerifyResponse {
   allowSale: boolean;
-  status: "ACTIVE" | "EXPIRED" | "DESTROYED" | "UNKNOWN";
-  riskLevel: "LOW" | "HIGH" | "CRITICAL";
+  status: BatchPassport["currentStatus"] | "UNKNOWN";
+  riskLevel: BatchPassport["riskLevel"];
   message: string;
 }
 
