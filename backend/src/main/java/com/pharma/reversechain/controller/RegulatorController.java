@@ -4,10 +4,13 @@ import com.pharma.reversechain.entity.AlertSeverity;
 import com.pharma.reversechain.entity.BatchStatus;
 import com.pharma.reversechain.entity.FraudAlert;
 import com.pharma.reversechain.entity.OrganizationType;
+import com.pharma.reversechain.dto.FraudAlertResponse;
+import com.pharma.reversechain.dto.InvestigationResponse;
 import com.pharma.reversechain.repository.BatchRepository;
 import com.pharma.reversechain.repository.FraudAlertRepository;
 import com.pharma.reversechain.repository.OrganizationRepository;
 import com.pharma.reversechain.repository.ReturnRequestRepository;
+import com.pharma.reversechain.service.BlockchainService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -32,6 +35,7 @@ public class RegulatorController {
     private final OrganizationRepository organizationRepository;
     private final BatchRepository batchRepository;
     private final ReturnRequestRepository returnRequestRepository;
+    private final BlockchainService blockchainService;
 
     @GetMapping("/dashboard")
     public ResponseEntity<Map<String, Object>> getDashboard() {
@@ -63,17 +67,43 @@ public class RegulatorController {
     }
 
     @GetMapping("/alerts")
-    public Page<FraudAlert> getAlerts(Pageable pageable) {
-        return fraudAlertRepository.findAll(pageable);
+    public Page<FraudAlertResponse> getAlerts(Pageable pageable) {
+        return fraudAlertRepository.findAll(pageable).map(this::mapToFraudAlertResponse);
     }
 
     @GetMapping("/investigations/{alertId}")
-    public ResponseEntity<Map<String, Object>> getInvestigationDetails(@PathVariable UUID alertId) {
+    public ResponseEntity<InvestigationResponse> getInvestigationDetails(@PathVariable UUID alertId) {
         return fraudAlertRepository.findById(alertId)
-                .map(alert -> ResponseEntity.ok(Map.of(
-                        "alert", alert,
-                        "blockchainProof", "MOCK_PROOF_TX_" + alertId.toString().substring(0, 8)
-                )))
+                .map(alert -> {
+                    InvestigationResponse response = new InvestigationResponse();
+                    response.setAlert(mapToFraudAlertResponse(alert));
+                    if (alert.getBatchId() != null) {
+                        try {
+                            String history = blockchainService.getBatchHistory(alert.getBatchId().toString());
+                            response.setBlockchainProof(history);
+                        } catch (Exception e) {
+                            response.setBlockchainProof("Error retrieving blockchain proof");
+                        }
+                    } else {
+                        response.setBlockchainProof("No associated batch");
+                    }
+                    return ResponseEntity.ok(response);
+                })
                 .orElse(ResponseEntity.notFound().build());
+    }
+    
+    private FraudAlertResponse mapToFraudAlertResponse(FraudAlert alert) {
+        FraudAlertResponse response = new FraudAlertResponse();
+        response.setAlertId(alert.getAlertId());
+        response.setType(alert.getType());
+        response.setSeverity(alert.getSeverity());
+        response.setStatus(alert.getStatus());
+        response.setBatchId(alert.getBatchId());
+        response.setBatchNumber(alert.getBatchNumber());
+        response.setDetectedAt(alert.getDetectedAt());
+        response.setLocation(alert.getLocation());
+        response.setOrganizationId(alert.getOrganizationId());
+        response.setMessage(alert.getMessage());
+        return response;
     }
 }

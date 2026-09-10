@@ -6,6 +6,10 @@ import org.springframework.stereotype.Repository;
 
 import java.util.UUID;
 
+import java.util.List;
+
 @Repository
 public interface NotificationRepository extends JpaRepository<Notification, UUID> {
+    List<Notification> findByOrganizationIdOrderByCreatedAtDesc(UUID organizationId);
+    List<Notification> findByUserIdOrderByCreatedAtDesc(UUID userId);
 }

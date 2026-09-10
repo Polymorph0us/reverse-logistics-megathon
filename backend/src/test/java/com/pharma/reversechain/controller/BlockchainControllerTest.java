@@ -1,8 +1,8 @@
 package com.pharma.reversechain.controller;
 
 import com.pharma.reversechain.blockchain.FabricGatewayConfig;
-import com.pharma.reversechain.blockchain.FabricGatewayService;
 import com.pharma.reversechain.repository.CertificateRepository;
+import com.pharma.reversechain.service.BlockchainService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,7 +19,7 @@ import static org.mockito.Mockito.when;
 class BlockchainControllerTest {
 
     @Mock
-    private FabricGatewayService fabricGatewayService;
+    private BlockchainService blockchainService;
 
     @Mock
     private FabricGatewayConfig gatewayConfig;
@@ -31,7 +31,7 @@ class BlockchainControllerTest {
 
     @BeforeEach
     void setUp() {
-        controller = new BlockchainController(fabricGatewayService, gatewayConfig, certificateRepository);
+        controller = new BlockchainController(blockchainService, gatewayConfig, certificateRepository);
     }
 
     @Test
@@ -51,7 +51,7 @@ class BlockchainControllerTest {
 
     @Test
     void testGetBatchFromLedger() {
-        when(fabricGatewayService.getBatch("BATCH-101"))
+        when(blockchainService.getBatchState("BATCH-101"))
                 .thenReturn("{\"batchId\":\"BATCH-101\",\"state\":\"ACTIVE\"}");
 
         ResponseEntity<Object> response = controller.getBatchFromLedger("BATCH-101");
@@ -61,7 +61,7 @@ class BlockchainControllerTest {
 
     @Test
     void testGetBatchHistoryFromLedger() {
-        when(fabricGatewayService.getBatchHistory("BATCH-101"))
+        when(blockchainService.getBatchHistory("BATCH-101"))
                 .thenReturn("[{\"txId\":\"tx-1\",\"state\":\"ACTIVE\"}]");
 
         ResponseEntity<Object> response = controller.getBatchHistoryFromLedger("BATCH-101");

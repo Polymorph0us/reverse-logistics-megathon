@@ -49,7 +49,9 @@ public class FraudAlert {
     @Column(nullable = false, length = 1000)
     private String message;
 
-    private Boolean resolved = false;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private AlertStatus status = AlertStatus.NEW;
 
     @PrePersist
     protected void onCreate() {

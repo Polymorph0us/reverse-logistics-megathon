@@ -40,6 +40,8 @@ fraud:
 
 fabric:
   enabled: true # Connects to local Docker Fabric network (falls back automatically if offline)
+blockchain:
+  mode: fabric # fabric or local
   channel-name: pharma-channel
   chaincode-name: pharma-contract
   peer-endpoint: localhost:7051

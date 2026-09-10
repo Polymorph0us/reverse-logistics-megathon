@@ -1,7 +1,6 @@
 package com.pharma.reversechain.service;
 
 import com.pharma.reversechain.entity.*;
-import com.pharma.reversechain.repository.FraudAlertRepository;
 import com.pharma.reversechain.repository.InvalidRegistryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,7 +14,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class FraudDetectionService {
 
-    private final FraudAlertRepository fraudAlertRepository;
+    private final AlertService alertService;
     private final InvalidRegistryRepository invalidRegistryRepository;
     private final RiskScoringService riskScoringService;
 
@@ -64,34 +63,16 @@ public class FraudDetectionService {
         return riskScoringService.computeRiskScore(riskFactors);
     }
 
+    public FraudAlert generateAlert(String type, AlertSeverity severity, Batch batch, String batchNumber, String location, Organization org, String message) {
+        return alertService.generateAlert(type, severity, batch, batchNumber, location, org, message);
+    }
+
     private void raiseAlert(String type, Batch batch, String location, Organization org, String message) {
-        FraudAlert alert = new FraudAlert();
-        alert.setType(type);
-        alert.setSeverity(AlertSeverity.CRITICAL);
-        alert.setBatchId(batch.getBatchId());
-        alert.setBatchNumber(batch.getBatchNumber());
-        alert.setLocation(location);
-        if (org != null) {
-            alert.setOrganizationId(org.getId());
-        }
-        alert.setMessage(message);
-        fraudAlertRepository.save(alert);
+        generateAlert(type, AlertSeverity.CRITICAL, batch, batch != null ? batch.getBatchNumber() : "Unknown", location, org, message);
     }
 
     private RiskScoringService.RiskScoreResult raiseAlertAndScore(String type, Batch batch, String batchNumber, String location, Organization org, String message, List<String> riskFactors) {
-        FraudAlert alert = new FraudAlert();
-        alert.setType(type);
-        alert.setSeverity(AlertSeverity.CRITICAL);
-        if (batch != null) {
-            alert.setBatchId(batch.getBatchId());
-        }
-        alert.setBatchNumber(batchNumber);
-        alert.setLocation(location);
-        if (org != null) {
-            alert.setOrganizationId(org.getId());
-        }
-        alert.setMessage(message);
-        fraudAlertRepository.save(alert);
+        generateAlert(type, AlertSeverity.CRITICAL, batch, batchNumber, location, org, message);
         return riskScoringService.computeRiskScore(riskFactors);
     }
 }

@@ -14,4 +14,6 @@ spring:
         format_sql: true
   flyway:
     enabled: false
-url: Matches your PostgreSQL host, port (5432), and database name (reversechaindb).
+blockchain:
+  mode: local
+# url: Matches your PostgreSQL host, port (5432), and database name (reversechaindb).

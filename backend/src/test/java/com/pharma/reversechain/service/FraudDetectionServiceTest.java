@@ -4,7 +4,7 @@ import com.pharma.reversechain.entity.Batch;
 import com.pharma.reversechain.entity.BatchStatus;
 import com.pharma.reversechain.entity.InvalidRegistry;
 import com.pharma.reversechain.entity.RiskLevel;
-import com.pharma.reversechain.repository.FraudAlertRepository;
+import com.pharma.reversechain.repository.InvalidRegistryRepository;
 import com.pharma.reversechain.repository.InvalidRegistryRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,7 +26,7 @@ import static org.mockito.Mockito.*;
 class FraudDetectionServiceTest {
 
     @Mock
-    private FraudAlertRepository fraudAlertRepository;
+    private AlertService alertService;
 
     @Mock
     private InvalidRegistryRepository invalidRegistryRepository;
@@ -37,7 +37,7 @@ class FraudDetectionServiceTest {
     @BeforeEach
     void setUp() {
         riskScoringService = new RiskScoringService();
-        fraudDetectionService = new FraudDetectionService(fraudAlertRepository, invalidRegistryRepository, riskScoringService);
+        fraudDetectionService = new FraudDetectionService(alertService, invalidRegistryRepository, riskScoringService);
     }
 
     @Test
@@ -48,7 +48,7 @@ class FraudDetectionServiceTest {
         assertEquals(RiskLevel.HIGH, result.level());
         assertEquals(80, result.score());
         assertTrue(result.reasons().contains("UNKNOWN_BATCH"));
-        verify(fraudAlertRepository, times(1)).save(any());
+        verify(alertService, times(1)).generateAlert(any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -69,7 +69,7 @@ class FraudDetectionServiceTest {
 
         assertEquals(RiskLevel.LOW, result.level());
         assertEquals(0, result.score());
-        verify(fraudAlertRepository, never()).save(any());
+        verify(alertService, never()).generateAlert(any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -92,7 +92,7 @@ class FraudDetectionServiceTest {
 
         assertEquals(RiskLevel.CRITICAL, result.level());
         assertTrue(result.reasons().contains("DESTROYED_BATCH_REENTRY"));
-        verify(fraudAlertRepository, atLeastOnce()).save(any());
+        verify(alertService, atLeastOnce()).generateAlert(any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -113,6 +113,6 @@ class FraudDetectionServiceTest {
 
         assertEquals(RiskLevel.MEDIUM, result.level());
         assertTrue(result.reasons().contains("EXPIRED_BATCH"));
-        verify(fraudAlertRepository, times(1)).save(any());
+        verify(alertService, times(1)).generateAlert(any(), any(), any(), any(), any(), any(), any());
     }
 }

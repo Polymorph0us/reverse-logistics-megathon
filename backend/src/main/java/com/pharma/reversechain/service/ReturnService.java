@@ -1,9 +1,9 @@
 package com.pharma.reversechain.service;
 
-import com.pharma.reversechain.blockchain.FabricGatewayService;
 import com.pharma.reversechain.entity.*;
 import com.pharma.reversechain.repository.BatchRepository;
 import com.pharma.reversechain.repository.ReturnRequestRepository;
+import com.pharma.reversechain.service.BlockchainService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,7 +20,7 @@ public class ReturnService {
     private final BatchRepository batchRepository;
     private final BatchStateMachine stateMachine;
     private final FraudDetectionService fraudDetectionService;
-    private final FabricGatewayService fabricGatewayService;
+    private final BlockchainService blockchainService;
 
     @Transactional
     public ReturnRequest initiateReturn(UUID batchId, Integer quantity, String reason, String condition, String evidence, User actor) {
@@ -49,9 +49,9 @@ public class ReturnService {
 
         ReturnRequest savedRequest = returnRequestRepository.save(request);
 
-        // Record RETURN_INITIATED on Fabric Audit Ledger
+        // Record RETURN_INITIATED on Blockchain
         try {
-            fabricGatewayService.initiateReturn(
+            blockchainService.recordReturn(
                     batch.getBatchId().toString(),
                     savedRequest.getReturnId().toString(),
                     quantity,
@@ -59,7 +59,7 @@ public class ReturnService {
                     condition
             );
         } catch (Exception e) {
-            log.warn("Fabric audit record for initiateReturn encountered exception: {}", e.getMessage());
+            log.warn("Blockchain audit record for initiateReturn encountered exception: {}", e.getMessage());
         }
 
         return savedRequest;
@@ -85,6 +85,16 @@ public class ReturnService {
         if (diff != 0) {
             batch.setRiskLevel(RiskLevel.HIGH);
             batch.setRiskScore(batch.getRiskScore() + 60);
+            
+            fraudDetectionService.generateAlert(
+                "RETURN_QUANTITY_DISCREPANCY",
+                AlertSeverity.HIGH,
+                batch,
+                batch.getBatchNumber(),
+                "DISTRIBUTOR_RECEIPT",
+                actor.getOrganization(),
+                "Quantity discrepancy detected during distributor receipt. Expected: " + request.getRequestedQuantity() + ", Received: " + receivedQuantity
+            );
         }
         batch.setCurrentOwnerId(actor.getOrganizationId());
         batchRepository.save(batch);
@@ -95,9 +105,9 @@ public class ReturnService {
 
         ReturnRequest savedRequest = returnRequestRepository.save(request);
 
-        // Record RETURN_RECEIVED on Fabric Audit Ledger
+        // Record RETURN_RECEIVED on Blockchain
         try {
-            fabricGatewayService.receiveReturn(
+            blockchainService.recordDistributorReceipt(
                     batch.getBatchId().toString(),
                     savedRequest.getReturnId().toString(),
                     receivedQuantity,
@@ -105,7 +115,7 @@ public class ReturnService {
                     condition
             );
         } catch (Exception e) {
-            log.warn("Fabric audit record for receiveReturn encountered exception: {}", e.getMessage());
+            log.warn("Blockchain audit record for receiveReturn encountered exception: {}", e.getMessage());
         }
 
         return savedRequest;
@@ -130,6 +140,16 @@ public class ReturnService {
         if (diff != 0) {
             batch.setRiskLevel(RiskLevel.HIGH);
             batch.setRiskScore(batch.getRiskScore() + 60);
+            
+            fraudDetectionService.generateAlert(
+                "RETURN_QUANTITY_DISCREPANCY",
+                AlertSeverity.HIGH,
+                batch,
+                batch.getBatchNumber(),
+                "MANUFACTURER_RECEIPT",
+                actor.getOrganization(),
+                "Quantity discrepancy detected during manufacturer receipt. Expected: " + expectedQuantity + ", Received: " + receivedQuantity
+            );
         } else if (nextStatus == BatchStatus.WITH_MANUFACTURER) {
             // They accepted the received quantity. Update the batch's current quantity to the received one to reflect reality.
             batch.setCurrentQuantity(receivedQuantity);
@@ -146,16 +166,16 @@ public class ReturnService {
 
         ReturnRequest savedRequest = returnRequestRepository.save(request);
 
-        // Record MANUFACTURER_RECEIVED on Fabric Audit Ledger
+        // Record MANUFACTURER_RECEIVED on Blockchain
         try {
-            fabricGatewayService.manufacturerReceive(
+            blockchainService.recordManufacturerReceipt(
                     batch.getBatchId().toString(),
                     savedRequest.getReturnId().toString(),
                     receivedQuantity,
                     condition
             );
         } catch (Exception e) {
-            log.warn("Fabric audit record for manufacturerReceive encountered exception: {}", e.getMessage());
+            log.warn("Blockchain audit record for manufacturerReceive encountered exception: {}", e.getMessage());
         }
 
         return savedRequest;

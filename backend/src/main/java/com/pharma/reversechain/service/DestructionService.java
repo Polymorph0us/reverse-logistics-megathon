@@ -1,6 +1,5 @@
 package com.pharma.reversechain.service;
 
-import com.pharma.reversechain.blockchain.FabricGatewayService;
 import com.pharma.reversechain.entity.*;
 import com.pharma.reversechain.repository.BatchRepository;
 import com.pharma.reversechain.repository.CertificateRepository;
@@ -25,7 +24,6 @@ public class DestructionService {
     private final BatchStateMachine stateMachine;
     private final BlockchainService blockchainService;
     private final InvalidRegistryRepository invalidRegistryRepository;
-    private final FabricGatewayService fabricGatewayService;
 
     @Transactional
     public DestructionRecord scheduleDestruction(com.pharma.reversechain.dto.ScheduleDestructionRequest request, User actor) {
@@ -54,9 +52,9 @@ public class DestructionService {
 
         DestructionRecord savedRecord = destructionRecordRepository.save(record);
 
-        // Record SENT_FOR_DISPOSAL on Fabric Audit Ledger
+        // Record SENT_FOR_DISPOSAL on Blockchain
         try {
-            fabricGatewayService.sendForDisposal(
+            blockchainService.recordDisposalScheduled(
                     batch.getBatchId().toString(),
                     savedRecord.getDestructionId().toString(),
                     request.getQuantity(),
@@ -64,7 +62,7 @@ public class DestructionService {
                     request.getScheduledDate() != null ? request.getScheduledDate().toString() : LocalDateTime.now().toString()
             );
         } catch (Exception e) {
-            log.warn("Fabric audit record for sendForDisposal encountered exception: {}", e.getMessage());
+            log.warn("Blockchain audit record for sendForDisposal encountered exception: {}", e.getMessage());
         }
 
         return savedRecord;
@@ -90,24 +88,14 @@ public class DestructionService {
             throw new IllegalArgumentException("Destroyed quantity must match scheduled quantity for this record exactly");
         }
 
-        // Fabric Blockchain Call
-        String txId = blockchainService.recordDestruction(request.getCertificateHash());
-
-        // Update batch status and quantity
-        batch = stateMachine.transitionBatch(batch, BatchStatus.DESTROYED, "DESTRUCTION_CONFIRMED",
-                actor.getName(), actor.getOrganizationId(), actor.getRole(), null, request.getQuantityDestroyed(), request.getCertificateHash(), "TxId: " + txId);
-        
-        batch.setCurrentQuantity(batch.getCurrentQuantity() - request.getQuantityDestroyed());
-        // Note: Batch stays in DESTROYED status until it's explicitly CLOSED if we want, but DESTROYED is terminal enough for this flow.
-        batchRepository.save(batch);
-
         // Update Destruction Record
         record.setStatus(DestructionStatus.DESTROYED);
         destructionRecordRepository.save(record);
 
-        // Record DESTRUCTION_CONFIRMED with SHA-256 certificate hash on Fabric Audit Ledger
+        // Record DESTRUCTION_CONFIRMED with SHA-256 certificate hash on Blockchain
+        String txId = "local-hash";
         try {
-            fabricGatewayService.confirmDestruction(
+            var result = blockchainService.recordDestruction(
                     batch.getBatchId().toString(),
                     record.getDestructionId().toString(),
                     request.getQuantityDestroyed(),
@@ -115,8 +103,9 @@ public class DestructionService {
                     record.getDestructionId().toString(),
                     request.getCertificateHash()
             );
+            txId = result.transactionId();
         } catch (Exception e) {
-            log.warn("Fabric audit record for confirmDestruction encountered exception: {}", e.getMessage());
+            log.warn("Blockchain audit record for confirmDestruction encountered exception: {}", e.getMessage());
         }
 
         // Add to Invalid Registry for Reentry Checks
@@ -128,6 +117,14 @@ public class DestructionService {
         invalidRegistry.setInvalidatedQuantity(request.getQuantityDestroyed());
         invalidRegistry.setReason("DESTROYED_BY_FACILITY_CERT_" + txId);
         invalidRegistryRepository.save(invalidRegistry);
+
+        // Update batch status and quantity
+        batch = stateMachine.transitionBatch(batch, BatchStatus.DESTROYED, "DESTRUCTION_CONFIRMED",
+                actor.getName(), actor.getOrganizationId(), actor.getRole(), null, request.getQuantityDestroyed(), request.getCertificateHash(), "TxId: " + txId);
+        
+        batch.setCurrentQuantity(batch.getCurrentQuantity() - request.getQuantityDestroyed());
+        // Note: Batch stays in DESTROYED status until it's explicitly CLOSED if we want, but DESTROYED is terminal enough for this flow.
+        batchRepository.save(batch);
 
         // Create Certificate
         Certificate cert = new Certificate();

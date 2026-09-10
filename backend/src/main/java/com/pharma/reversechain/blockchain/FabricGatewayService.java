@@ -11,9 +11,8 @@ import org.springframework.stereotype.Service;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashMap;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -26,10 +25,6 @@ public class FabricGatewayService {
     private Gateway gateway;
     private Network network;
     private Contract contract;
-
-    // In-memory ledger cache for local simulation / fallback when Fabric network is offline
-    private final Map<String, String> localLedgerSimulation = new ConcurrentHashMap<>();
-    private final Map<String, List<Map<String, Object>>> localHistorySimulation = new ConcurrentHashMap<>();
 
     private synchronized Contract getContract() {
         if (contract != null) {
@@ -46,10 +41,11 @@ public class FabricGatewayService {
                 return this.contract;
             }
         } catch (Exception e) {
-            log.warn("Fabric Gateway connection could not be established ({}). Operating with local ledger fallback.", e.getMessage());
+            log.error("Fabric Gateway connection could not be established ({}).", e.getMessage());
+            throw new RuntimeException("Fabric Gateway connection failed", e);
         }
 
-        return null;
+        throw new RuntimeException("Fabric Gateway is disabled or null");
     }
 
     /**
@@ -59,26 +55,14 @@ public class FabricGatewayService {
         Contract c = getContract();
         String payloadJson = toJson(payloadData);
         
-        if (c != null) {
-            try {
-                byte[] result = c.submitTransaction(methodName, batchId, payloadJson);
-                String eventHash = computeSha256(result);
-                return new FabricTransactionResult(true, new String(result, StandardCharsets.UTF_8), null, eventHash);
-            } catch (Exception e) {
-                log.error("Fabric {} failed: {}", methodName, e.getMessage(), e);
-                return new FabricTransactionResult(false, null, e.getMessage(), null);
-            }
+        try {
+            byte[] result = c.submitTransaction(methodName, batchId, payloadJson);
+            String eventHash = computeSha256(result);
+            return new FabricTransactionResult(true, new String(result, StandardCharsets.UTF_8), null, eventHash);
+        } catch (Exception e) {
+            log.error("Fabric {} failed: {}", methodName, e.getMessage(), e);
+            return new FabricTransactionResult(false, null, e.getMessage(), null);
         }
-
-        // Fallback / simulation record
-        String txId = "tx-" + UUID.randomUUID().toString().replace("-", "").substring(0, 16);
-        Map<String, Object> state = fromJson(payloadJson);
-        state.put("transactionId", txId);
-        state.put("timestamp", LocalDateTime.now().toString());
-
-        recordLocalSimulation(batchId, state, txId);
-        String eventHash = computeSha256(payloadJson + txId);
-        return new FabricTransactionResult(true, toJson(state), null, eventHash);
     }
 
     public FabricTransactionResult createBatch(String batchId, String batchNumber, String manufacturerId,
@@ -98,7 +82,7 @@ public class FabricGatewayService {
 
     public FabricTransactionResult initiateReturn(String batchId, String returnId, int quantity,
                                                   String reason, String conditionNote) {
-        Map<String, Object> payload = getOrMockBatch(batchId);
+        Map<String, Object> payload = getExistingBatchAsMap(batchId);
         payload.put("returnId", returnId);
         payload.put("returnQuantity", quantity);
         payload.put("returnReason", reason);
@@ -111,7 +95,7 @@ public class FabricGatewayService {
 
     public FabricTransactionResult receiveReturn(String batchId, String returnId, int receivedQuantity,
                                                 int difference, String conditionNote) {
-        Map<String, Object> payload = getOrMockBatch(batchId);
+        Map<String, Object> payload = getExistingBatchAsMap(batchId);
         payload.put("returnId", returnId);
         payload.put("receivedQuantity", receivedQuantity);
         payload.put("difference", difference);
@@ -123,7 +107,7 @@ public class FabricGatewayService {
     }
 
     public FabricTransactionResult manufacturerReceive(String batchId, String returnId, int receivedQuantity, String conditionNote) {
-        Map<String, Object> payload = getOrMockBatch(batchId);
+        Map<String, Object> payload = getExistingBatchAsMap(batchId);
         payload.put("returnId", returnId);
         payload.put("receivedQuantity", receivedQuantity);
         payload.put("conditionNote", conditionNote);
@@ -135,7 +119,7 @@ public class FabricGatewayService {
 
     public FabricTransactionResult sendForDisposal(String batchId, String destructionId, int quantity,
                                                    String wasteFacilityId, String scheduledDate) {
-        Map<String, Object> payload = getOrMockBatch(batchId);
+        Map<String, Object> payload = getExistingBatchAsMap(batchId);
         payload.put("destructionId", destructionId);
         payload.put("destructionQuantity", quantity);
         payload.put("wasteFacilityId", wasteFacilityId);
@@ -148,7 +132,7 @@ public class FabricGatewayService {
 
     public FabricTransactionResult confirmDestruction(String batchId, String destructionId, int quantityDestroyed,
                                                       String destructionDate, String certificateId, String certificateHash) {
-        Map<String, Object> payload = getOrMockBatch(batchId);
+        Map<String, Object> payload = getExistingBatchAsMap(batchId);
         payload.put("destructionId", destructionId);
         payload.put("quantityDestroyed", quantityDestroyed);
         payload.put("destructionDate", destructionDate);
@@ -161,67 +145,45 @@ public class FabricGatewayService {
     }
 
     public FabricTransactionResult closeBatch(String batchId, String closureReason) {
-        Map<String, Object> payload = getOrMockBatch(batchId);
+        Map<String, Object> payload = getExistingBatchAsMap(batchId);
         payload.put("closureReason", closureReason);
         payload.put("currentStatus", "CLOSED");
         payload.put("eventType", "BATCH_CLOSED");
         return submitTransaction("closeBatch", batchId, payload);
     }
 
-
     public String getBatch(String batchId) {
         Contract c = getContract();
-        if (c != null) {
-            try {
-                byte[] result = c.evaluateTransaction("getBatch", batchId);
-                return new String(result, StandardCharsets.UTF_8);
-            } catch (Exception e) {
-                log.error("Fabric getBatch failed for {}: {}", batchId, e.getMessage());
-            }
+        try {
+            byte[] result = c.evaluateTransaction("getBatch", batchId);
+            return new String(result, StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            log.error("Fabric getBatch failed for {}: {}", batchId, e.getMessage());
+            throw new RuntimeException("Fabric getBatch failed", e);
         }
-        return localLedgerSimulation.getOrDefault(batchId, toJson(getOrMockBatch(batchId)));
     }
 
     public String getBatchHistory(String batchId) {
         Contract c = getContract();
-        if (c != null) {
-            try {
-                byte[] result = c.evaluateTransaction("getBatchHistory", batchId);
-                return new String(result, StandardCharsets.UTF_8);
-            } catch (Exception e) {
-                log.error("Fabric getBatchHistory failed for {}: {}", batchId, e.getMessage());
-            }
+        try {
+            byte[] result = c.evaluateTransaction("getBatchHistory", batchId);
+            return new String(result, StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            log.error("Fabric getBatchHistory failed for {}: {}", batchId, e.getMessage());
+            throw new RuntimeException("Fabric getBatchHistory failed", e);
         }
-        List<Map<String, Object>> history = localHistorySimulation.getOrDefault(batchId, Collections.emptyList());
-        return toJson(history);
     }
 
-    private void recordLocalSimulation(String batchId, Map<String, Object> state, String txId) {
-        String json = toJson(state);
-        localLedgerSimulation.put(batchId, json);
-        localHistorySimulation.computeIfAbsent(batchId, k -> new ArrayList<>()).add(Map.of(
-                "txId", txId,
-                "timestamp", LocalDateTime.now().toString(),
-                "isDelete", false,
-                "value", state
-        ));
-    }
-
-    private Map<String, Object> getOrMockBatch(String batchId) {
-        if (localLedgerSimulation.containsKey(batchId)) {
-            return fromJson(localLedgerSimulation.get(batchId));
-        }
-        Map<String, Object> mock = new HashMap<>();
-        mock.put("batchId", batchId);
-        mock.put("batchNumber", "UNKNOWN");
-        return mock;
+    private Map<String, Object> getExistingBatchAsMap(String batchId) {
+        String json = getBatch(batchId);
+        return fromJson(json);
     }
 
     private String toJson(Object obj) {
         try {
             return objectMapper.writeValueAsString(obj);
         } catch (Exception e) {
-            return "{}";
+            throw new RuntimeException("Failed to serialize to JSON", e);
         }
     }
 
@@ -230,7 +192,7 @@ public class FabricGatewayService {
         try {
             return objectMapper.readValue(json, Map.class);
         } catch (Exception e) {
-            return new HashMap<>();
+            throw new RuntimeException("Failed to deserialize JSON", e);
         }
     }
 
@@ -250,7 +212,7 @@ public class FabricGatewayService {
     }
 
     /**
-     * Compute SHA-256 hash (Kept here for the verification endpoint which still needs to verify certificate PDFs)
+     * Compute SHA-256 hash
      */
     public String computeSha256(byte[] bytes) {
         try {

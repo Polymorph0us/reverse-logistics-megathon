@@ -2,8 +2,8 @@ package com.pharma.reversechain.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pharma.reversechain.blockchain.FabricGatewayConfig;
-import com.pharma.reversechain.blockchain.FabricGatewayService;
 import com.pharma.reversechain.entity.Certificate;
+import com.pharma.reversechain.service.BlockchainService;
 import com.pharma.reversechain.repository.CertificateRepository;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +18,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class BlockchainController {
 
-    private final FabricGatewayService fabricGatewayService;
+    private final BlockchainService blockchainService;
     private final FabricGatewayConfig gatewayConfig;
     private final CertificateRepository certificateRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -37,7 +37,7 @@ public class BlockchainController {
 
     @GetMapping("/batches/{batchId}")
     public ResponseEntity<Object> getBatchFromLedger(@PathVariable String batchId) {
-        String result = fabricGatewayService.getBatch(batchId);
+        String result = blockchainService.getBatchState(batchId);
         try {
             return ResponseEntity.ok(objectMapper.readValue(result, Object.class));
         } catch (Exception e) {
@@ -47,7 +47,7 @@ public class BlockchainController {
 
     @GetMapping("/batches/{batchId}/history")
     public ResponseEntity<Object> getBatchHistoryFromLedger(@PathVariable String batchId) {
-        String history = fabricGatewayService.getBatchHistory(batchId);
+        String history = blockchainService.getBatchHistory(batchId);
         try {
             return ResponseEntity.ok(objectMapper.readValue(history, Object.class));
         } catch (Exception e) {
@@ -63,12 +63,12 @@ public class BlockchainController {
             cert = certificateRepository.findById(request.getCertificateId()).orElse(null);
         }
 
-        String ledgerBatch = fabricGatewayService.getBatch(request.getBatchId());
+        String ledgerBatch = blockchainService.getBatchState(request.getBatchId());
         boolean hashMatches = false;
         String recordedHash = cert != null ? cert.getCertificateHash() : null;
 
         if (request.getCertificateContent() != null) {
-            String calculatedHash = fabricGatewayService.computeSha256(request.getCertificateContent());
+            String calculatedHash = blockchainService.computeSha256(request.getCertificateContent());
             hashMatches = calculatedHash.equalsIgnoreCase(recordedHash) ||
                     (ledgerBatch != null && ledgerBatch.contains(calculatedHash));
             return ResponseEntity.ok(Map.of(

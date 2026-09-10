@@ -24,4 +24,6 @@ fraud:
 
 fabric:
   enabled: false
+blockchain:
+  mode: local
 
