@@ -62,7 +62,8 @@ public class FabricGatewayService {
         if (c != null) {
             try {
                 byte[] result = c.submitTransaction(methodName, batchId, payloadJson);
-                return new FabricTransactionResult(true, new String(result, StandardCharsets.UTF_8), null, null);
+                String eventHash = computeSha256(result);
+                return new FabricTransactionResult(true, new String(result, StandardCharsets.UTF_8), null, eventHash);
             } catch (Exception e) {
                 log.error("Fabric {} failed: {}", methodName, e.getMessage(), e);
                 return new FabricTransactionResult(false, null, e.getMessage(), null);
@@ -76,7 +77,8 @@ public class FabricGatewayService {
         state.put("timestamp", LocalDateTime.now().toString());
 
         recordLocalSimulation(batchId, state, txId);
-        return new FabricTransactionResult(true, toJson(state), null, null);
+        String eventHash = computeSha256(payloadJson + txId);
+        return new FabricTransactionResult(true, toJson(state), null, eventHash);
     }
 
     public FabricTransactionResult createBatch(String batchId, String batchNumber, String manufacturerId,
@@ -89,6 +91,7 @@ public class FabricGatewayService {
         payload.put("manufacturingDate", manufacturingDate);
         payload.put("expiryDate", expiryDate);
         payload.put("currentStatus", "ACTIVE");
+        payload.put("eventType", "BATCH_CREATED");
         
         return submitTransaction("createBatch", batchId, payload);
     }
@@ -101,6 +104,7 @@ public class FabricGatewayService {
         payload.put("returnReason", reason);
         payload.put("conditionNote", conditionNote);
         payload.put("currentStatus", "RETURN_INITIATED");
+        payload.put("eventType", "RETURN_INITIATED");
 
         return submitTransaction("initiateReturn", batchId, payload);
     }
@@ -113,6 +117,7 @@ public class FabricGatewayService {
         payload.put("difference", difference);
         payload.put("conditionNote", conditionNote);
         payload.put("currentStatus", difference != 0 ? "DISPUTED" : "WITH_DISTRIBUTOR");
+        payload.put("eventType", "RETURN_RECEIVED_DISTRIBUTOR");
 
         return submitTransaction("receiveReturn", batchId, payload);
     }
@@ -123,6 +128,7 @@ public class FabricGatewayService {
         payload.put("receivedQuantity", receivedQuantity);
         payload.put("conditionNote", conditionNote);
         payload.put("currentStatus", "WITH_MANUFACTURER");
+        payload.put("eventType", "RETURN_RECEIVED_MANUFACTURER");
 
         return submitTransaction("manufacturerReceive", batchId, payload);
     }
@@ -135,6 +141,7 @@ public class FabricGatewayService {
         payload.put("wasteFacilityId", wasteFacilityId);
         payload.put("scheduledDate", scheduledDate);
         payload.put("currentStatus", "SCHEDULED_FOR_DESTRUCTION");
+        payload.put("eventType", "SENT_FOR_DISPOSAL");
 
         return submitTransaction("sendForDisposal", batchId, payload);
     }
@@ -148,6 +155,7 @@ public class FabricGatewayService {
         payload.put("certificateId", certificateId);
         payload.put("certificateHash", certificateHash);
         payload.put("currentStatus", "DESTROYED");
+        payload.put("eventType", "DESTRUCTION_CONFIRMED");
 
         return submitTransaction("confirmDestruction", batchId, payload);
     }
@@ -156,9 +164,10 @@ public class FabricGatewayService {
         Map<String, Object> payload = getOrMockBatch(batchId);
         payload.put("closureReason", closureReason);
         payload.put("currentStatus", "CLOSED");
-
+        payload.put("eventType", "BATCH_CLOSED");
         return submitTransaction("closeBatch", batchId, payload);
     }
+
 
     public String getBatch(String batchId) {
         Contract c = getContract();
@@ -225,13 +234,28 @@ public class FabricGatewayService {
         }
     }
 
+    public boolean isBatchReturned(String batchId) {
+        String batchJson = getBatch(batchId);
+        if (batchJson != null) {
+            Map<String, Object> map = fromJson(batchJson);
+            String status = (String) map.get("currentStatus");
+            return "RETURN_INITIATED".equals(status) ||
+                   "WITH_DISTRIBUTOR".equals(status) ||
+                   "WITH_MANUFACTURER".equals(status) ||
+                   "SCHEDULED_FOR_DESTRUCTION".equals(status) ||
+                   "DESTROYED".equals(status) ||
+                   "CLOSED".equals(status);
+        }
+        return false;
+    }
+
     /**
      * Compute SHA-256 hash (Kept here for the verification endpoint which still needs to verify certificate PDFs)
      */
-    public String computeSha256(String text) {
+    public String computeSha256(byte[] bytes) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(text.getBytes(StandardCharsets.UTF_8));
+            byte[] hash = digest.digest(bytes);
             StringBuilder hexString = new StringBuilder(2 * hash.length);
             for (byte b : hash) {
                 String hex = Integer.toHexString(0xff & b);
@@ -244,6 +268,10 @@ public class FabricGatewayService {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public String computeSha256(String text) {
+        return computeSha256(text.getBytes(StandardCharsets.UTF_8));
     }
 
     public record FabricTransactionResult(boolean success, String payload, String error, String eventHash) {}
