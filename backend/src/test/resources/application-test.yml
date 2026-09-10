@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    driverClassName: org.h2.Driver
+    username: sa
+    password: password
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+  flyway:
+    enabled: false
+jwt:
+  secret: 4d284f18166d48259f63abf5bc439d57a9e52e468e82fa08842af58df24b17e4
+  expiration: 86400000
+fraud:
+  thresholds:
+    low: 20
+    medium: 50
+    high: 80
