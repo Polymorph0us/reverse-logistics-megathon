@@ -19,7 +19,8 @@ export function RegulatorDashboardView() {
 
   if (!kpis) return <div className="p-8 text-center text-gray-500 animate-pulse">Loading dashboard...</div>
 
-  const destroyedCount = batches.filter(b => b.currentStatus === 'DESTROYED').length || destructions.length
+  const destroyedBatchesCount = batches.filter(b => b.currentStatus === 'DESTROYED').length
+  const destroyedCount = destroyedBatchesCount > 0 ? destroyedBatchesCount : (destructions.length > 0 ? 1 : 0)
 
   const chartData = [
     { name: "Day 1", fraud: 0, destructions: 0 },
@@ -33,9 +34,9 @@ export function RegulatorDashboardView() {
 
   const complianceData = [
     { org: "Sun Pharma (Mfr)", score: 100 },
-    { org: "ABC Distributors", score: 100 },
-    { org: "EcoWaste (CBWTF)", score: 100 },
-    { org: "Flagged Retailer (POS)", score: liveAlerts.length > 0 ? 0 : 100 },
+    { org: "ABC Distributors Ltd", score: 100 },
+    { org: "EcoWaste Management", score: 100 },
+    { org: liveAlerts[0]?.organization || "Rogue POS Terminal", score: liveAlerts.length > 0 ? 0 : 100 },
   ]
 
   return (
