@@ -51,6 +51,21 @@ public class MasterConsignment {
     @Column(name = "received_at")
     private LocalDateTime receivedAt;
 
+    @Column(name = "merkle_root", length = 64)
+    private String merkleRoot;
+
+    @Column(name = "merkle_tree", columnDefinition = "TEXT")
+    private String merkleTree;
+
+    @Column(name = "total_weight_grams")
+    private Integer totalWeightGrams = 0;
+
+    @Column(name = "transit_hash_tx_id", length = 255)
+    private String transitHashTxId;
+
+    @Column(name = "oem_receiver_note", columnDefinition = "TEXT")
+    private String oemReceiverNote;
+
     @Version
     private Long version;
 }

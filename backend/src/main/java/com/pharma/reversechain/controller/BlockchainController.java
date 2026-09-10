@@ -6,6 +6,7 @@ import com.pharma.reversechain.dto.BlockchainProofResponse;
 import com.pharma.reversechain.entity.*;
 import com.pharma.reversechain.service.AlertService;
 import com.pharma.reversechain.service.BlockchainService;
+import com.pharma.reversechain.service.KeyValueHashBlockchainService;
 import com.pharma.reversechain.repository.CertificateRepository;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;

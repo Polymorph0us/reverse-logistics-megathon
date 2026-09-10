@@ -668,7 +668,7 @@ export const tagDenatured = async (
   const tagId = `DNT-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random()
     .toString(36).substring(2, 6).toUpperCase()}`;
 
-  const tag: DenaturedBatchTag = {
+  let tag: DenaturedBatchTag = {
     tagId,
     batchId,
     batchNumber: batch.batchNumber,
@@ -683,6 +683,19 @@ export const tagDenatured = async (
     weightKg,
     status: "CONFIRMED",
   };
+
+  try {
+    const res = await fetch("http://localhost:8081/api/denatured", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(tag)
+    });
+    if (res.ok) {
+      tag = await res.json();
+    }
+  } catch (e) {
+    console.warn("Backend /api/denatured unreachable, proceeding with mock data");
+  }
 
   state.addDenaturedTag(tag);
   // Flip to CONDITION_DENATURED_CONDEMNED — stronger than SCHEDULED_FOR_DESTRUCTION
@@ -756,7 +769,7 @@ export const generateEWTN = async (
   const facility = facilities[cbwtfFacilityKey];
   const ewtnId = `EWTN-${new Date().getFullYear()}-RAJ-${Math.floor(1000 + Math.random() * 9000)}`;
 
-  const ewtn: ElectronicWasteTransferNote = {
+  let ewtn: ElectronicWasteTransferNote = {
     ewtnId,
     denaturedTagId,
     batchId: tag.batchId,
@@ -774,6 +787,19 @@ export const generateEWTN = async (
     createdAt: new Date().toISOString(),
     status: "SCHEDULED",
   };
+
+  try {
+    const res = await fetch("http://localhost:8081/api/ewtn", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(ewtn)
+    });
+    if (res.ok) {
+      ewtn = await res.json();
+    }
+  } catch (e) {
+    console.warn("Backend /api/ewtn unreachable, proceeding with mock data");
+  }
 
   state.addEWTN(ewtn);
   state.updateBatch(tag.batchId, { currentStatus: "SCHEDULED_FOR_DESTRUCTION" });
@@ -831,7 +857,7 @@ export const logIncineration = async (
   const logId = `INCIN-LOG-${now.getTime()}`;
   const startTime = new Date(now.getTime() - 2 * 3600000).toISOString(); // 2h incin window
 
-  const log: IncinerationLog = {
+  let log: IncinerationLog = {
     logId,
     ewtnId,
     batchId: ewtn.batchId,
@@ -844,6 +870,19 @@ export const logIncineration = async (
     passed,
     recordedAt: now.toISOString(),
   };
+
+  try {
+    const res = await fetch("http://localhost:8081/api/kiln/incineration-logs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(log)
+    });
+    if (res.ok) {
+      log = await res.json();
+    }
+  } catch (e) {
+    console.warn("Backend /api/kiln/incineration-logs unreachable, proceeding with mock data");
+  }
 
   state.addIncinerationLog(log);
   state.updateEWTN(ewtnId, { status: "INCINERATED", pickupConfirmedAt: now.toISOString() });
@@ -1150,6 +1189,23 @@ export const runKilnIncineration = async (
     completedAt:            kilnEnd.toISOString(),
     status:                 weightPassed ? "COMPLETED" : "WEIGHT_DISPUTE",
   };
+
+  try {
+    const payload = { ...record };
+    payload.weightVerification = JSON.stringify(payload.weightVerification) as any;
+    payload.telemetryReadings = JSON.stringify(payload.telemetryReadings) as any;
+    payload.destroyedBatchIds = JSON.stringify(payload.destroyedBatchIds) as any;
+    payload.destroyedBatchNumbers = JSON.stringify(payload.destroyedBatchNumbers) as any;
+    payload.sourcePharmacyIds = JSON.stringify(payload.sourcePharmacyIds) as any;
+
+    await fetch("http://localhost:8081/api/kiln/run", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+  } catch (e) {
+    console.warn("Backend /api/kiln/run unreachable");
+  }
 
   // ── TERMINAL STATUS COMMITMENT — permanent, irreversible ────────────────
   for (const bId of destroyedBatchIds) {
