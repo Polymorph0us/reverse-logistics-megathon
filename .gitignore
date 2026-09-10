@@ -30,3 +30,7 @@ target/
 # Fabric Network
 fabric-network/organizations/
 fabric-network/channel-artifacts/
+
+# Local proxy
+powershell.cmd
+
