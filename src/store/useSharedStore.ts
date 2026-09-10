@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { BatchPassport, FraudAlert, Notification, ReturnRequest, DestructionCertificate, TimelineEvent, MasterConsignment, DenaturedBatchTag, ElectronicWasteTransferNote, IncinerationLog, FinalIncinerationRecord } from '@/api/types';
-import { SEED_BATCHES, SEED_ALERTS, SEED_RETURNS, SEED_DESTRUCTIONS } from './seedData';
 
 interface SharedState {
   batches: BatchPassport[];
@@ -41,12 +40,13 @@ interface SharedState {
   // Layer 5 actions
   addFinalIncinerationRecord: (rec: FinalIncinerationRecord) => void;
   
+  clearAllData: () => void;
   seedIfEmpty: () => void;
 }
 
 export const useSharedStore = create<SharedState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       batches: [],
       fraudAlerts: [],
       notifications: [],
@@ -58,6 +58,26 @@ export const useSharedStore = create<SharedState>()(
       incinerationLogs: [],
       finalIncinerationRecords: [],
       
+      clearAllData: () => {
+        try {
+          localStorage.removeItem('rxtrack-shared-state');
+        } catch (e) {
+          console.error(e);
+        }
+        set({
+          batches: [],
+          fraudAlerts: [],
+          notifications: [],
+          returns: [],
+          destructions: [],
+          masterConsignments: [],
+          denaturedTags: [],
+          ewtns: [],
+          incinerationLogs: [],
+          finalIncinerationRecords: []
+        });
+      },
+
       addBatch: (batch) => set((state) => ({ batches: [...state.batches, batch] })),
       updateBatch: (batchId, updates) => set((state) => ({
         batches: state.batches.map(b => b.batchId === batchId ? { ...b, ...updates } : b)
@@ -96,16 +116,7 @@ export const useSharedStore = create<SharedState>()(
       addFinalIncinerationRecord: (rec) => set((state) => ({ finalIncinerationRecords: [rec, ...state.finalIncinerationRecords] })),
       
       seedIfEmpty: () => {
-        const state = get();
-        if (state.batches.length === 0) {
-          set({
-            batches: SEED_BATCHES,
-            fraudAlerts: SEED_ALERTS,
-            returns: SEED_RETURNS,
-            destructions: SEED_DESTRUCTIONS,
-            notifications: []
-          });
-        }
+        // Empty by default as requested by user
       }
     }),
     {

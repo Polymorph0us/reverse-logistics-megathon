@@ -8,13 +8,17 @@ import { Truck, AlertTriangle, CheckCircle2, ArrowRight, ShieldCheck, Package } 
 
 export function DistributorDashboard() {
   const returns = useSharedStore(state => state.returns)
-  const batches = useSharedStore(state => state.batches)
   const fraudAlerts = useSharedStore(state => state.fraudAlerts)
   const navigate = useNavigate()
 
-  const pendingReturns = returns.filter(r => r.status === "AWAITING_DISTRIBUTOR" || r.status === "PENDING")
+  const pendingReturns = returns.filter(
+    r => r.status === "AWAITING_DISTRIBUTOR" || 
+         r.status === "PENDING" || 
+         r.status === "RETURN_INITIATED" || 
+         r.status === "IN_TRANSIT"
+  )
   const processedReturns = returns.filter(r => r.status === "RECEIVED_BY_DISTRIBUTOR" || r.status === "COMPLETED")
-  const discrepancyAlerts = fraudAlerts.filter(a => a.type === "QUANTITY_MISMATCH" || a.type === "SUSPICIOUS_TRANSIT")
+  const discrepancyAlerts = fraudAlerts.filter(a => a.type === "QUANTITY_MISMATCH" || (a.type as string) === "SUSPICIOUS_TRANSIT")
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -122,7 +126,7 @@ export function DistributorDashboard() {
                   </TableCell>
                   <TableCell className="text-sm text-gray-700">{req.initiatedBy}</TableCell>
                   <TableCell className="font-semibold text-sm">{req.requestedQuantity} STRIPS</TableCell>
-                  <TableCell><StatusBadge status={req.status} /></TableCell>
+                  <TableCell><StatusBadge status={req.status as any} /></TableCell>
                   <TableCell className="text-right">
                     <Button 
                       size="sm" 

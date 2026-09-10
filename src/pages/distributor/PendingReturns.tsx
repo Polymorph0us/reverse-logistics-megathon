@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useMemo } from "react"
 import { receiveReturn } from "@/api/mockApi"
 import type { ReceiveReturnResponse } from "@/api/types"
 import { useSharedStore } from "@/store/useSharedStore"
@@ -11,43 +11,34 @@ import {
   PackageCheck, 
   Scale, 
   Truck, 
-  ShieldAlert, 
   CheckCircle2, 
-  Info,
   Layers
 } from "lucide-react"
 
 export function PendingReturns() {
-  const returns = useSharedStore(state => state.returns.filter(
-    r => r.status === "AWAITING_DISTRIBUTOR" || r.status === "IN_TRANSIT" || r.transitStatus === "HANDOFF_PENDING" || r.transitStatus === "IN_TRANSIT"
-  ))
+  const allReturns = useSharedStore(state => state.returns)
+  
+  const returns = useMemo(() => {
+    return (allReturns || []).filter(
+      r => r.status === "AWAITING_DISTRIBUTOR" || 
+           r.status === "IN_TRANSIT" || 
+           r.status === "RETURN_INITIATED" ||
+           r.status === "PENDING" ||
+           r.transitStatus === "HANDOFF_PENDING" || 
+           r.transitStatus === "IN_TRANSIT"
+    )
+  }, [allReturns])
   
   const [receivedQtyMap, setReceivedQtyMap] = useState<Record<string, number>>({})
   const [receivedWeightMap, setReceivedWeightMap] = useState<Record<string, number>>({})
   const [result, setResult] = useState<(ReceiveReturnResponse & { weightDeltaPercent?: number; weightStatus?: string }) | null>(null)
   const [submitting, setSubmitting] = useState<string | null>(null)
 
-  useEffect(() => {
-    const qtys: Record<string, number> = {}
-    const weights: Record<string, number> = {}
-    returns.forEach(r => {
-      if (receivedQtyMap[r.returnId] === undefined) {
-        qtys[r.returnId] = r.requestedQuantity
-      }
-      if (receivedWeightMap[r.returnId] === undefined) {
-        weights[r.returnId] = r.grossWeightGrams || 1250
-      }
-    })
-    if (Object.keys(qtys).length > 0) {
-      setReceivedQtyMap(prev => ({ ...prev, ...qtys }))
-      setReceivedWeightMap(prev => ({ ...prev, ...weights }))
-    }
-  }, [returns])
-
   const handleReceive = async (returnId: string, expectedQty: number) => {
     setSubmitting(returnId)
+    const targetReturn = returns.find(r => r.returnId === returnId)
     const qty = receivedQtyMap[returnId] ?? expectedQty
-    const intakeWeight = receivedWeightMap[returnId]
+    const intakeWeight = receivedWeightMap[returnId] ?? (targetReturn?.grossWeightGrams || 1250)
     const res = await receiveReturn(returnId, qty, expectedQty, intakeWeight)
     setResult(res)
     setSubmitting(null)
