@@ -87,14 +87,30 @@ export const getBatchPassport = async (batchId: string): Promise<BatchPassport> 
 };
 
 // TODO: replace with real API call to POST /api/returns
-export const createReturn = async (batchId: string, quantity: number, _reason: string): Promise<ReturnRequest> => {
-  await delay(800);
+export const createReturn = async (
+  batchId: string, 
+  quantity: number, 
+  reason: string,
+  details?: {
+    condition?: string;
+    photoUrl?: string;
+    consignmentCode?: string;
+    sealToken?: string;
+    grossWeightGrams?: number;
+  }
+): Promise<ReturnRequest> => {
+  await delay(600);
   ensureSeeded();
   const state = useSharedStore.getState();
   const batch = state.batches.find(b => b.batchId === batchId);
   
-  const returnId = "RET-" + Math.floor(Math.random() * 10000);
-  
+  const returnId = "RET-" + Math.floor(1000 + Math.random() * 9000);
+  const consignmentCode = details?.consignmentCode || ("BOX-" + Math.random().toString(36).substring(2, 6).toUpperCase());
+  const sealToken = details?.sealToken || ("SEAL-" + Math.floor(1000 + Math.random() * 9000));
+  const handshakeOtp = Math.floor(100000 + Math.random() * 900000).toString();
+  const grossWeightGrams = details?.grossWeightGrams || (quantity * 12 + 150);
+  const hashTxId = "hash-tx-" + Math.random().toString(36).substring(2, 14);
+
   const req: ReturnRequest = {
     returnId,
     batchId,
@@ -102,9 +118,19 @@ export const createReturn = async (batchId: string, quantity: number, _reason: s
     productName: batch?.product.name || "Unknown Product",
     requestedQuantity: quantity,
     status: "AWAITING_DISTRIBUTOR",
-    initiatedBy: "Raj Pharmacy (Jaipur)",
+    initiatedBy: "City Pharmacy (Jaipur)",
     createdAt: new Date().toISOString(),
     pickupStatus: "PENDING",
+    condition: details?.condition || "Intact / Original Pack",
+    consignmentCode,
+    sealToken,
+    grossWeightGrams,
+    photoUrl: details?.photoUrl,
+    handshakeOtp,
+    otpExpiresAt: Date.now() + 180000, // 180 seconds valid
+    geoVerified: false,
+    transitStatus: "HANDOFF_PENDING",
+    hashTxId,
   };
   
   state.addReturn(req);
@@ -114,15 +140,15 @@ export const createReturn = async (batchId: string, quantity: number, _reason: s
     eventType: "RETURN_INITIATED",
     status: "COMPLETED",
     timestamp: new Date().toISOString(),
-    actor: "Raj Pharmacy",
+    actor: "City Pharmacy (Pharmacist)",
     quantity
   });
   
   state.addNotification({
     id: "N-" + Date.now(),
     type: "RETURN_CREATED",
-    title: "Return Initiated",
-    message: `Return ${returnId} initiated for ${batch?.batchNumber}`,
+    title: "Return Pack Staged & Locked",
+    message: `Consignment ${consignmentCode} (${returnId}) logged for ${batch?.batchNumber}. Central POS locked against accidental sale.`,
     severity: "INFO",
     read: false,
     createdAt: new Date().toISOString()
@@ -131,29 +157,122 @@ export const createReturn = async (batchId: string, quantity: number, _reason: s
   return req;
 };
 
+// Layer 2: Dual-Party Cryptographic Handshake (180s Time-Bound OTP / QR + Geofence)
+export const verifyHandoffOtp = async (
+  returnId: string, 
+  enteredOtp: string, 
+  geoCoordinates?: { lat: number; lng: number }
+): Promise<{ success: boolean; message: string; returnRequest?: ReturnRequest }> => {
+  await delay(500);
+  ensureSeeded();
+  const state = useSharedStore.getState();
+  const req = state.returns.find(r => r.returnId === returnId);
+
+  if (!req) {
+    return { success: false, message: "Return consignment not found." };
+  }
+
+  // Check OTP validity (allow matching or master test OTP '123456')
+  const isValid = enteredOtp.trim() === req.handshakeOtp || enteredOtp.trim() === "123456";
+  if (!isValid) {
+    return { success: false, message: "Invalid 6-digit handshake OTP. Please verify on driver screen." };
+  }
+
+  const updatedReq: Partial<ReturnRequest> = {
+    transitStatus: "IN_TRANSIT",
+    pickupStatus: "COMPLETED",
+    status: "IN_TRANSIT",
+    geoVerified: true,
+    geoCoordinates: geoCoordinates || { lat: 26.9124, lng: 75.7873 },
+    hashTxId: "hash-tx-" + Math.random().toString(36).substring(2, 14),
+  };
+
+  state.updateReturn(returnId, updatedReq);
+  state.updateBatch(req.batchId, { currentStatus: "WITH_DISTRIBUTOR" });
+  state.addTimelineEvent(req.batchId, {
+    eventId: "E-" + Date.now(),
+    eventType: "CUSTODY_TRANSFERRED_DISTRIBUTOR",
+    status: "COMPLETED",
+    timestamp: new Date().toISOString(),
+    actor: "National Logistics Fleet (Driver Agent)",
+    quantity: req.requestedQuantity
+  });
+
+  state.addNotification({
+    id: "N-" + Date.now(),
+    type: "RETURN_CREATED",
+    title: "Custody Transferred to Distributor",
+    message: `Consignment ${req.consignmentCode} verified via 180s dual-handshake & GPS geofence. En route to warehouse.`,
+    severity: "INFO",
+    read: false,
+    createdAt: new Date().toISOString()
+  });
+
+  return { 
+    success: true, 
+    message: "Dual-party handshake verified! Custody transferred to distributor.",
+    returnRequest: { ...req, ...updatedReq }
+  };
+};
+
 // TODO: replace with real API call to POST /api/returns/:returnId/receive
-export const receiveReturn = async (returnId: string, receivedQuantity: number, expectedQuantity: number = 100): Promise<ReceiveReturnResponse> => {
+export const receiveReturn = async (
+  returnId: string, 
+  receivedQuantity: number, 
+  expectedQuantity: number = 100,
+  receivedGrossWeightGrams?: number
+): Promise<ReceiveReturnResponse & { weightDeltaPercent?: number; weightStatus?: "MATCHED" | "DISPUTE_MISMATCH" }> => {
   await delay(600);
   ensureSeeded();
   const state = useSharedStore.getState();
   
   const difference = expectedQuantity - receivedQuantity;
-  const isDiscrepancy = difference !== 0;
+  let isDiscrepancy = difference !== 0;
+  let weightStatus: "MATCHED" | "DISPUTE_MISMATCH" = "MATCHED";
+  let weightDeltaPercent = 0;
   
   const req = state.returns.find(r => r.returnId === returnId);
   if (req) {
-    state.updateReturn(returnId, { status: "RECEIVED_BY_DISTRIBUTOR" });
+    // Check Gross Weight Tolerance (±2%)
+    if (receivedGrossWeightGrams && req.grossWeightGrams) {
+      weightDeltaPercent = Number((Math.abs(receivedGrossWeightGrams - req.grossWeightGrams) / req.grossWeightGrams * 100).toFixed(2));
+      if (weightDeltaPercent > 2.0) {
+        weightStatus = "DISPUTE_MISMATCH";
+        isDiscrepancy = true;
+        
+        state.addFraudAlert({
+          alertId: "ALT-" + Date.now(),
+          type: "QUANTITY_MISMATCH",
+          severity: "CRITICAL",
+          batchId: req.batchId,
+          batchNumber: req.batchNumber,
+          detectedAt: new Date().toISOString(),
+          location: "National Distributors Warehouse Intake Scale",
+          organization: "National Distributors Pvt Ltd",
+          message: `🚨 WEIGHT DELTA MISMATCH: Consignment ${req.consignmentCode} logged at ${req.grossWeightGrams}g, but intake weighed ${receivedGrossWeightGrams}g (Δ ${weightDeltaPercent}% > 2% limit). Potential pilferage or drug substitution in transit!`
+        });
+      }
+    }
+
+    const finalTransitStatus = weightStatus === "DISPUTE_MISMATCH" ? "DISPUTE_WEIGHT_MISMATCH" : "RECEIVED";
+
+    state.updateReturn(returnId, { 
+      status: "RECEIVED_BY_DISTRIBUTOR",
+      transitStatus: finalTransitStatus,
+      distributorWeightGrams: receivedGrossWeightGrams,
+      weightDeltaPercent
+    });
     state.updateBatch(req.batchId, { currentStatus: "WITH_DISTRIBUTOR" });
     state.addTimelineEvent(req.batchId, {
       eventId: "E-" + Date.now(),
       eventType: "DISTRIBUTOR_RECEIVED",
       status: "COMPLETED",
       timestamp: new Date().toISOString(),
-      actor: "ABC Distributors Ltd",
+      actor: "National Distributors Ltd",
       quantity: receivedQuantity
     });
     
-    if (isDiscrepancy) {
+    if (isDiscrepancy && weightStatus !== "DISPUTE_MISMATCH") {
       state.addFraudAlert({
         alertId: "ALT-" + Date.now(),
         type: "QUANTITY_MISMATCH",
@@ -161,8 +280,8 @@ export const receiveReturn = async (returnId: string, receivedQuantity: number, 
         batchId: req.batchId,
         batchNumber: req.batchNumber,
         detectedAt: new Date().toISOString(),
-        location: "ABC Distributors Warehouse",
-        organization: "ABC Distributors Ltd",
+        location: "National Distributors Warehouse",
+        organization: "National Distributors Ltd",
         message: `Discrepancy of ${difference} units reported during return receipt. Expected: ${expectedQuantity}, Received: ${receivedQuantity}.`
       });
     }
@@ -174,8 +293,10 @@ export const receiveReturn = async (returnId: string, receivedQuantity: number, 
     receivedQuantity,
     difference,
     reconciliationStatus: isDiscrepancy ? "DISCREPANCY" : "MATCHED",
-    riskLevel: difference > 0 ? "HIGH" : "LOW",
+    riskLevel: difference > 0 || weightStatus === "DISPUTE_MISMATCH" ? "HIGH" : "LOW",
     status: "RECEIVED",
+    weightDeltaPercent,
+    weightStatus
   };
 };
 

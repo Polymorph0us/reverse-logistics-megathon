@@ -131,6 +131,91 @@ export function RetailerInventory() {
         </Card>
       </div>
 
+      {/* CDSCO 2025 Expiry Watchdog & Auto-Drafted Returns Section (<60 Days) */}
+      {batches.filter(b => {
+        const exp = new Date(b.expiryDate)
+        return isBefore(exp, addDays(new Date(), 60)) && b.currentStatus !== "DESTROYED"
+      }).length > 0 && (
+        <Card className="border-amber-200 bg-gradient-to-r from-amber-50/60 via-white to-orange-50/40 shadow-sm overflow-hidden">
+          <div className="bg-amber-100/70 px-4 py-2.5 border-b border-amber-200 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+              </span>
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-900">
+                CDSCO 2025 Expiry Watchdog (<span className="underline">60-Day Mandate Window</span>)
+              </span>
+            </div>
+            <span className="text-[11px] font-medium text-amber-800 bg-amber-200/70 px-2.5 py-0.5 rounded-full">
+              Automated Reverse Dispatch Active
+            </span>
+          </div>
+          <CardContent className="p-4 space-y-3">
+            <p className="text-xs text-gray-600">
+              India's CDSCO mandate requires return to distributor within 30 days of expiry. Batches nearing or past expiry are automatically queued below with pre-drafted returns mapped to your designated distributor.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {batches.filter(b => {
+                const exp = new Date(b.expiryDate)
+                return isBefore(exp, addDays(new Date(), 60)) && b.currentStatus !== "DESTROYED"
+              }).slice(0, 3).map((b) => {
+                const exp = new Date(b.expiryDate)
+                const expired = isPast(exp)
+                const days = Math.abs(Math.round((exp.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))
+                const isStaged = b.currentStatus === "RETURN_INITIATED" || b.currentStatus === "WITH_DISTRIBUTOR"
+
+                return (
+                  <div key={b.batchId} className="bg-white p-3 rounded-lg border border-amber-200/80 shadow-xs flex flex-col justify-between space-y-2.5">
+                    <div>
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="font-bold text-xs text-gray-900 line-clamp-1">{b.product.name}</span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                          expired ? "bg-red-100 text-red-700 border border-red-200" : "bg-amber-100 text-amber-800 border border-amber-200"
+                        }`}>
+                          {expired ? `EXPIRED (${days}d ago)` : `${days}d left`}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="font-mono text-[11px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-700">
+                          {b.batchNumber}
+                        </span>
+                        <span className="text-[11px] text-gray-500 font-medium">
+                          {b.currentQuantity} {b.unit}
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-gray-400 mt-1">
+                        Mapped to: <span className="font-semibold text-gray-600">National Distributors Ltd</span>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
+                      <span className="text-[10px] font-medium text-emerald-700">
+                        {isStaged ? "Return In Transit" : "Auto-Draft Ready"}
+                      </span>
+                      {!isStaged ? (
+                        <Button 
+                          size="sm" 
+                          className="h-7 text-xs bg-amber-600 hover:bg-amber-700 text-white font-medium px-2.5"
+                          onClick={() => navigate(`/retailer/return/${b.batchId}`)}
+                        >
+                          <ArrowRightLeft className="w-3 h-3 mr-1" />
+                          Prepare & Seal Return
+                        </Button>
+                      ) : (
+                        <span className="text-[11px] font-mono text-gray-500 font-semibold">
+                          LOCKED (RETURNED)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Filter and Search Bar */}
       <Card className="shadow-sm border-gray-200">
         <CardContent className="p-4">

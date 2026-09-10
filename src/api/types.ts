@@ -61,6 +61,19 @@ export interface ReturnRequest {
   initiatedBy: string;
   createdAt: string;
   pickupStatus: "PENDING" | "SCHEDULED" | "COMPLETED";
+  condition?: string;
+  consignmentCode?: string;
+  sealToken?: string;
+  grossWeightGrams?: number;
+  photoUrl?: string;
+  handshakeOtp?: string;
+  otpExpiresAt?: number;
+  geoVerified?: boolean;
+  geoCoordinates?: { lat: number; lng: number };
+  transitStatus?: "PACKED" | "HANDOFF_PENDING" | "IN_TRANSIT" | "RECEIVED" | "DISPUTE_WEIGHT_MISMATCH";
+  distributorWeightGrams?: number;
+  weightDeltaPercent?: number;
+  hashTxId?: string;
 }
 
 export interface ReceiveReturnResponse {
