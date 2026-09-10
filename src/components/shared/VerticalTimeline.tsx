@@ -1,7 +1,6 @@
 import type { TimelineEvent } from "@/api/types";
 import { format } from "date-fns";
 import { CheckCircle2, Clock, AlertTriangle, Truck, Factory, ShieldAlert } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 interface VerticalTimelineProps {
   events: TimelineEvent[];
@@ -28,7 +27,7 @@ export function VerticalTimeline({ events }: VerticalTimelineProps) {
 
   return (
     <div className="relative border-l border-gray-200 ml-3 space-y-6 pb-4">
-      {events.map((event, idx) => (
+      {events.map((event) => (
         <div key={event.eventId} className="relative pl-8">
           <div className="absolute -left-3.5 bg-white p-1 rounded-full border border-gray-200">
             {getIcon(event.eventType)}
