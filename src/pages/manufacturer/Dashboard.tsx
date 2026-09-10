@@ -6,15 +6,21 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
 export function ManufacturerDashboard() {
   const destructions = useSharedStore(state => state.destructions)
   const returns = useSharedStore(state => state.returns)
+  const batches = useSharedStore(state => state.batches)
 
-  const pendingDestructions = 5 // mock logic
-  const completedDestructions = destructions.length
+  const pendingDestructions = batches.filter(
+    b => b.currentStatus === "SCHEDULED_FOR_DESTRUCTION" || 
+         b.currentStatus === "CONDITION_DENATURED_CONDEMNED"
+  ).length
+  const completedDestructions = batches.filter(b => b.currentStatus === "DESTROYED").length || destructions.length
+
+  const totalUnitsDestroyed = destructions.reduce((acc, d) => acc + (d.quantityDestroyed || 0), 0)
+  const currentMonth = new Date().toLocaleString('default', { month: 'short' })
 
   const chartData = [
-    { month: "Jan", volume: 120 },
-    { month: "Feb", volume: 150 },
-    { month: "Mar", volume: 80 },
-    { month: "Apr", volume: completedDestructions * 100 }, // Make it dynamic based on actions
+    { month: "Cycle 1", volume: 0 },
+    { month: "Cycle 2", volume: 0 },
+    { month: `${currentMonth} (Live)`, volume: totalUnitsDestroyed },
   ]
 
   return (
