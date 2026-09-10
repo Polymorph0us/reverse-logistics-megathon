@@ -34,3 +34,6 @@ fabric-network/channel-artifacts/
 # Local proxy
 powershell.cmd
 
+# Generated Storage & Certificates
+backend/storage/
+

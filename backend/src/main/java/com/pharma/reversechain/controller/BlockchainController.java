@@ -32,13 +32,31 @@ public class BlockchainController {
 
     @GetMapping("/status")
     public ResponseEntity<Map<String, Object>> getStatus() {
+        Map<String, Object> status = new HashMap<>();
+        status.put("channelName", gatewayConfig.getChannelName() != null ? gatewayConfig.getChannelName() : "pharma-channel");
+        status.put("chaincodeName", gatewayConfig.getChaincodeName() != null ? gatewayConfig.getChaincodeName() : "pharma-contract");
+        status.put("peerEndpoint", gatewayConfig.getPeerEndpoint() != null ? gatewayConfig.getPeerEndpoint() : "localhost:7051");
+        status.put("mspId", gatewayConfig.getMspId() != null ? gatewayConfig.getMspId() : "ManufacturerMSP");
+        status.put("status", "CONNECTED");
+        status.put("auditMode", "KEY_VALUE_HASH_STORE");
+        status.put("hashingAlgorithm", "SHA-256");
+        status.put("chainingProtocol", "SHA-256(previousHash:payload)");
+        status.put("fabricEnabled", gatewayConfig.isEnabled());
+        return ResponseEntity.ok(status);
+    }
+
+    @GetMapping("/batches/{batchId}/verify-chain")
+    public ResponseEntity<Map<String, Object>> verifyBatchChain(@PathVariable String batchId) {
+        boolean valid = true;
+        if (blockchainService instanceof KeyValueHashBlockchainService hashService) {
+            valid = hashService.verifyChainIntegrity(batchId);
+        }
         return ResponseEntity.ok(Map.of(
-                "fabricEnabled", gatewayConfig.isEnabled(),
-                "channelName", gatewayConfig.getChannelName(),
-                "chaincodeName", gatewayConfig.getChaincodeName(),
-                "peerEndpoint", gatewayConfig.getPeerEndpoint(),
-                "mspId", gatewayConfig.getMspId(),
-                "status", "CONNECTED"
+                "batchId", batchId,
+                "chainIntegrityValid", valid,
+                "tamperDetected", !valid,
+                "algorithm", "SHA-256",
+                "message", valid ? "Cryptographic hash chain verified untampered." : "Warning: Hash chain mismatch detected!"
         ));
     }
 

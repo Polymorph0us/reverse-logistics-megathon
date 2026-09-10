@@ -39,9 +39,9 @@ fraud:
     high: 80
 
 fabric:
-  enabled: true # Connects to local Docker Fabric network (falls back automatically if offline)
+  enabled: false # Switched to clean in-database Key-Value SHA-256 Hash Store
 blockchain:
-  mode: fabric # fabric or local
+  mode: hash-store # hash-store (default), fabric, or local
   channel-name: pharma-channel
   chaincode-name: pharma-contract
   peer-endpoint: localhost:7051
