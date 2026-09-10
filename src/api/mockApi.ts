@@ -62,20 +62,19 @@ export const getDashboardKPIs = async (): Promise<DashboardKPIs> => {
 // TODO: replace with real API call to GET /api/regulator/dashboard
 export const getRegulatorDashboard = async (): Promise<RegulatorDashboard> => {
   await delay(400);
-  ensureSeeded();
   const state = useSharedStore.getState();
   
   return {
-    totalManufacturers: 2,
-    totalDistributors: 5,
-    totalRetailers: 12,
+    totalManufacturers: 1,
+    totalDistributors: 1,
+    totalRetailers: 1,
     totalTrackedBatches: state.batches.length,
     expiredBatches: state.batches.filter(b => b.currentStatus === 'EXPIRED').length,
     returnsInProgress: state.returns.filter(r => r.status !== 'COMPLETED').length,
     destroyedBatches: state.batches.filter(b => b.currentStatus === 'DESTROYED').length,
     fraudAlerts: state.fraudAlerts.length,
     criticalAlerts: state.fraudAlerts.filter(a => a.severity === 'CRITICAL').length,
-    openInvestigations: 2,
+    openInvestigations: state.fraudAlerts.length,
   };
 };
 

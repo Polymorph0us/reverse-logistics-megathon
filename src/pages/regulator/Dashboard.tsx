@@ -9,9 +9,9 @@ import { useSharedStore } from "@/store/useSharedStore"
 export function RegulatorDashboardView() {
   const [kpis, setKpis] = useState<RegulatorDashboard | null>(null)
   
-  // Use live alerts from the store for the top count, simulating a truly live dashboard
   const liveAlerts = useSharedStore(state => state.fraudAlerts)
   const destructions = useSharedStore(state => state.destructions)
+  const batches = useSharedStore(state => state.batches)
 
   useEffect(() => {
     getRegulatorDashboard().then(setKpis)
@@ -19,21 +19,23 @@ export function RegulatorDashboardView() {
 
   if (!kpis) return <div className="p-8 text-center text-gray-500 animate-pulse">Loading dashboard...</div>
 
+  const destroyedCount = batches.filter(b => b.currentStatus === 'DESTROYED').length || destructions.length
+
   const chartData = [
-    { name: "Mon", fraud: 2, destructions: 10 },
-    { name: "Tue", fraud: 4, destructions: 15 },
-    { name: "Wed", fraud: 3, destructions: 8 },
-    { name: "Thu", fraud: 5, destructions: 20 },
-    { name: "Fri", fraud: 1, destructions: 12 },
-    { name: "Sat", fraud: 2, destructions: 5 },
-    { name: "Sun", fraud: 8, destructions: 25 },
+    { name: "Day 1", fraud: 0, destructions: 0 },
+    { name: "Day 2", fraud: 0, destructions: 0 },
+    { name: "Day 3", fraud: 0, destructions: 0 },
+    { name: "Day 4", fraud: 0, destructions: 0 },
+    { name: "Day 5", fraud: 0, destructions: 0 },
+    { name: "Day 6", fraud: 0, destructions: 0 },
+    { name: "Today", fraud: liveAlerts.length, destructions: destroyedCount },
   ]
 
   const complianceData = [
-    { org: "Sun Pharma", score: 98 },
-    { org: "ABC Distributors", score: 92 },
-    { org: "Raj Pharmacy", score: 85 },
-    { org: "EcoWaste", score: 99 },
+    { org: "Sun Pharma (Mfr)", score: 100 },
+    { org: "ABC Distributors", score: 100 },
+    { org: "EcoWaste (CBWTF)", score: 100 },
+    { org: "Flagged Retailer (POS)", score: liveAlerts.length > 0 ? 0 : 100 },
   ]
 
   return (
@@ -70,7 +72,7 @@ export function RegulatorDashboardView() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {(kpis.totalManufacturers + kpis.totalDistributors + kpis.totalRetailers).toLocaleString()}
+              {4}
             </div>
             <p className="text-xs text-gray-500 mt-1">Active nodes in network</p>
           </CardContent>
@@ -98,8 +100,8 @@ export function RegulatorDashboardView() {
             <AlertTriangle className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div key={destructions.length} className="text-2xl font-bold text-orange-600 animate-in slide-in-from-bottom-2">
-              {kpis.destroyedBatches + destructions.length}
+            <div key={destroyedCount} className="text-2xl font-bold text-orange-600 animate-in slide-in-from-bottom-2">
+              {destroyedCount}
             </div>
             <p className="text-xs text-gray-500 mt-1">Total batches securely destroyed</p>
           </CardContent>
