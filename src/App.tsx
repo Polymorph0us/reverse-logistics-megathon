@@ -8,14 +8,17 @@ import { VerifyBatch } from "./pages/POS/VerifyBatch"
 
 // Retailer
 import { RetailerDashboard } from "./pages/retailer/Dashboard"
+import { RetailerInventory } from "./pages/retailer/Inventory"
 import { ExpiringMedicines } from "./pages/retailer/ExpiringMedicines"
 import { CreateReturn } from "./pages/retailer/CreateReturn"
 
 // Distributor
+import { DistributorDashboard } from "./pages/distributor/Dashboard"
 import { PendingReturns } from "./pages/distributor/PendingReturns"
 
 // Manufacturer
 import { ManufacturerDashboard } from "./pages/manufacturer/Dashboard"
+import { ScheduleDestruction } from "./pages/manufacturer/ScheduleDestruction"
 
 // Waste Facility
 import { FacilityDashboard } from "./pages/facility/Dashboard"
@@ -24,10 +27,8 @@ import { CertificateView } from "./pages/facility/CertificateView"
 // Regulator
 import { RegulatorDashboardView } from "./pages/regulator/Dashboard"
 import { FraudAlerts } from "./pages/regulator/FraudAlerts"
+import { Investigation } from "./pages/regulator/Investigation"
 import { BatchPassportView } from "./pages/shared/BatchPassportView"
-
-// Placeholder pages to resolve imports
-const Placeholder = ({ title }: { title: string }) => <div className="p-6"><h1>{title}</h1><p>Under construction...</p></div>
 
 function RequireAuth({ children, allowedRoles }: { children: ReactNode, allowedRoles?: string[] }) {
   const { user } = useAuthStore()
@@ -82,17 +83,17 @@ export default function App() {
 
           {/* Retailer */}
           <Route path="retailer/dashboard" element={<RequireAuth allowedRoles={["RETAILER"]}><RetailerDashboard /></RequireAuth>} />
-          <Route path="retailer/inventory" element={<RequireAuth allowedRoles={["RETAILER"]}><Placeholder title="Inventory" /></RequireAuth>} />
+          <Route path="retailer/inventory" element={<RequireAuth allowedRoles={["RETAILER"]}><RetailerInventory /></RequireAuth>} />
           <Route path="retailer/expiring" element={<RequireAuth allowedRoles={["RETAILER"]}><ExpiringMedicines /></RequireAuth>} />
           <Route path="retailer/return/:batchId" element={<RequireAuth allowedRoles={["RETAILER"]}><CreateReturn /></RequireAuth>} />
 
           {/* Distributor */}
-          <Route path="distributor/dashboard" element={<RequireAuth allowedRoles={["DISTRIBUTOR"]}><Placeholder title="Distributor Dashboard" /></RequireAuth>} />
+          <Route path="distributor/dashboard" element={<RequireAuth allowedRoles={["DISTRIBUTOR"]}><DistributorDashboard /></RequireAuth>} />
           <Route path="distributor/returns" element={<RequireAuth allowedRoles={["DISTRIBUTOR"]}><PendingReturns /></RequireAuth>} />
 
           {/* Manufacturer */}
           <Route path="manufacturer/dashboard" element={<RequireAuth allowedRoles={["MANUFACTURER"]}><ManufacturerDashboard /></RequireAuth>} />
-          <Route path="manufacturer/schedule-destruction" element={<RequireAuth allowedRoles={["MANUFACTURER"]}><Placeholder title="Schedule Destruction" /></RequireAuth>} />
+          <Route path="manufacturer/schedule-destruction" element={<RequireAuth allowedRoles={["MANUFACTURER"]}><ScheduleDestruction /></RequireAuth>} />
 
           {/* Waste Facility */}
           <Route path="facility/dashboard" element={<RequireAuth allowedRoles={["WASTE_FACILITY"]}><FacilityDashboard /></RequireAuth>} />
@@ -101,7 +102,7 @@ export default function App() {
           {/* Regulator */}
           <Route path="regulator/dashboard" element={<RequireAuth allowedRoles={["REGULATOR", "ADMIN"]}><RegulatorDashboardView /></RequireAuth>} />
           <Route path="regulator/alerts" element={<RequireAuth allowedRoles={["REGULATOR", "ADMIN"]}><FraudAlerts /></RequireAuth>} />
-          <Route path="regulator/investigation/:alertId" element={<RequireAuth allowedRoles={["REGULATOR", "ADMIN"]}><Placeholder title="Investigation" /></RequireAuth>} />
+          <Route path="regulator/investigation/:alertId" element={<RequireAuth allowedRoles={["REGULATOR", "ADMIN"]}><Investigation /></RequireAuth>} />
         </Route>
       </Routes>
     </Router>
