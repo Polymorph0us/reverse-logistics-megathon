@@ -1,3 +1,4 @@
+import type { ReactNode } from "react"
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"
 import { useAuthStore } from "./store/useAuthStore"
 import { Login } from "./pages/Login"
@@ -17,7 +18,6 @@ import { CertificateView } from "./pages/facility/CertificateView"
 
 // Placeholder pages to resolve imports
 const Placeholder = ({ title }: { title: string }) => <div className="p-6"><h1>{title}</h1><p>Under construction...</p></div>
-import type { ReactNode } from "react"
 
 function RequireAuth({ children, allowedRoles }: { children: ReactNode, allowedRoles?: string[] }) {
   const { user } = useAuthStore()

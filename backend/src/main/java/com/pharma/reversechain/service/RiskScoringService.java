@@ -10,13 +10,13 @@ import java.util.List;
 public class RiskScoringService {
 
     @Value("${fraud.thresholds.low:20}")
-    private int lowThreshold;
+    private int lowThreshold = 20;
 
     @Value("${fraud.thresholds.medium:50}")
-    private int mediumThreshold;
+    private int mediumThreshold = 50;
 
     @Value("${fraud.thresholds.high:80}")
-    private int highThreshold;
+    private int highThreshold = 80;
 
     public RiskScoreResult computeRiskScore(List<String> riskFactors) {
         int score = 0;

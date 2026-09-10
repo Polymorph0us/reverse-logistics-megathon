@@ -1,14 +1,17 @@
 package com.pharma.reversechain.service;
 
+import com.pharma.reversechain.blockchain.FabricGatewayService;
 import com.pharma.reversechain.entity.*;
 import com.pharma.reversechain.repository.BatchRepository;
 import com.pharma.reversechain.repository.ReturnRequestRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ReturnService {
@@ -17,6 +20,7 @@ public class ReturnService {
     private final BatchRepository batchRepository;
     private final BatchStateMachine stateMachine;
     private final FraudDetectionService fraudDetectionService;
+    private final FabricGatewayService fabricGatewayService;
 
     @Transactional
     public ReturnRequest initiateReturn(UUID batchId, Integer quantity, String reason, String condition, String evidence, User actor) {
@@ -43,7 +47,22 @@ public class ReturnService {
         request.setEvidence(evidence);
         request.setStatus(ReturnStatus.INITIATED);
 
-        return returnRequestRepository.save(request);
+        ReturnRequest savedRequest = returnRequestRepository.save(request);
+
+        // Record RETURN_INITIATED on Fabric Audit Ledger
+        try {
+            fabricGatewayService.initiateReturn(
+                    batch.getBatchId().toString(),
+                    savedRequest.getReturnId().toString(),
+                    quantity,
+                    reason,
+                    condition
+            );
+        } catch (Exception e) {
+            log.warn("Fabric audit record for initiateReturn encountered exception: {}", e.getMessage());
+        }
+
+        return savedRequest;
     }
 
     @Transactional
@@ -51,7 +70,8 @@ public class ReturnService {
         ReturnRequest request = returnRequestRepository.findById(returnId)
                 .orElseThrow(() -> new IllegalArgumentException("Return Request not found"));
 
-        Batch batch = batchRepository.findById(request.getBatchId()).get();
+        Batch batch = batchRepository.findById(request.getBatchId())
+                .orElseThrow(() -> new IllegalArgumentException("Batch not found"));
 
         int diff = receivedQuantity - request.getRequestedQuantity();
         request.setReceivedQuantity(receivedQuantity);
@@ -73,7 +93,22 @@ public class ReturnService {
         request.setCondition(condition);
         if (evidence != null) request.setEvidence(evidence);
 
-        return returnRequestRepository.save(request);
+        ReturnRequest savedRequest = returnRequestRepository.save(request);
+
+        // Record RETURN_RECEIVED on Fabric Audit Ledger
+        try {
+            fabricGatewayService.receiveReturn(
+                    batch.getBatchId().toString(),
+                    savedRequest.getReturnId().toString(),
+                    receivedQuantity,
+                    diff,
+                    condition
+            );
+        } catch (Exception e) {
+            log.warn("Fabric audit record for receiveReturn encountered exception: {}", e.getMessage());
+        }
+
+        return savedRequest;
     }
 
     @Transactional
@@ -81,16 +116,13 @@ public class ReturnService {
         ReturnRequest request = returnRequestRepository.findById(returnId)
                 .orElseThrow(() -> new IllegalArgumentException("Return Request not found"));
 
-        Batch batch = batchRepository.findById(request.getBatchId()).get();
+        Batch batch = batchRepository.findById(request.getBatchId())
+                .orElseThrow(() -> new IllegalArgumentException("Batch not found"));
 
-        int diff = receivedQuantity - request.getReceivedQuantity(); // Diff from what distributor sent
+        int expectedQuantity = request.getReceivedQuantity() != null ? request.getReceivedQuantity() : request.getRequestedQuantity();
+        int diff = receivedQuantity - expectedQuantity; // Diff from what distributor or retailer sent
         
         BatchStatus nextStatus = diff != 0 ? BatchStatus.DISPUTED : BatchStatus.WITH_MANUFACTURER;
-        
-        // If it was disputed, and manufacturer receives it, they can override to WITH_MANUFACTURER if they accept the quantity
-        // The instructions say DISPUTED -> WITH_MANUFACTURER is manual override, but here we just transition based on what they receive.
-        // Let's just always transition to WITH_MANUFACTURER if they are the manufacturer, but record discrepancy.
-        // The rule: "Any non-zero diff sets DISCREPANCY and DISPUTED." So if diff != 0, it becomes DISPUTED again.
         
         batch = stateMachine.transitionBatch(batch, nextStatus, "RECEIVED_BY_MANUFACTURER",
                 actor.getName(), actor.getOrganizationId(), actor.getRole(), null, receivedQuantity, evidence, "Diff: " + diff);
@@ -112,6 +144,20 @@ public class ReturnService {
         request.setCondition(condition);
         if (evidence != null) request.setEvidence(evidence);
 
-        return returnRequestRepository.save(request);
+        ReturnRequest savedRequest = returnRequestRepository.save(request);
+
+        // Record MANUFACTURER_RECEIVED on Fabric Audit Ledger
+        try {
+            fabricGatewayService.manufacturerReceive(
+                    batch.getBatchId().toString(),
+                    savedRequest.getReturnId().toString(),
+                    receivedQuantity,
+                    condition
+            );
+        } catch (Exception e) {
+            log.warn("Fabric audit record for manufacturerReceive encountered exception: {}", e.getMessage());
+        }
+
+        return savedRequest;
     }
 }

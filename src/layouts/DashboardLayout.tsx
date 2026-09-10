@@ -1,6 +1,6 @@
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom"
 import { useAuthStore } from "@/store/useAuthStore"
-import { LayoutDashboard, Package, AlertTriangle, FileText, Settings, LogOut, Activity, ShieldAlert } from "lucide-react"
+import { LayoutDashboard, Package, AlertTriangle, FileText, LogOut, Activity, ShieldAlert } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export function DashboardLayout() {

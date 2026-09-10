@@ -81,7 +81,8 @@ public class BatchController {
             org = organizationRepository.findById(userDetails.getOrganizationId()).orElse(null);
         }
 
-        RiskScoringService.RiskScoreResult riskResult = fraudDetectionService.detectFraudForVerification(batch, request.getLocation(), org);
+        RiskScoringService.RiskScoreResult riskResult = fraudDetectionService.detectFraudForVerification(
+                batch, request.getBatchNumber(), request.getLocation(), org);
 
         boolean allowSale = true;
         String status = "UNKNOWN";

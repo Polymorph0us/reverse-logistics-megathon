@@ -4,7 +4,7 @@ import type { ReceiveReturnResponse } from "@/api/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { AlertTriangle, PackageCheck } from "lucide-react"
 
 export function PendingReturns() {

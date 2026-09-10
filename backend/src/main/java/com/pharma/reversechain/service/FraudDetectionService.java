@@ -21,11 +21,16 @@ public class FraudDetectionService {
 
     @Transactional
     public RiskScoringService.RiskScoreResult detectFraudForVerification(Batch batch, String location, Organization organization) {
+        return detectFraudForVerification(batch, batch != null ? batch.getBatchNumber() : "Unknown", location, organization);
+    }
+
+    @Transactional
+    public RiskScoringService.RiskScoreResult detectFraudForVerification(Batch batch, String batchNumber, String location, Organization organization) {
         List<String> riskFactors = new ArrayList<>();
 
         if (batch == null) {
             riskFactors.add("UNKNOWN_BATCH");
-            return raiseAlertAndScore("UNKNOWN_BATCH", null, "Unknown", location, organization, "Batch not found in system", riskFactors);
+            return raiseAlertAndScore("UNKNOWN_BATCH", null, batchNumber != null ? batchNumber : "Unknown", location, organization, "Batch not found in system", riskFactors);
         }
 
         // Check if expired

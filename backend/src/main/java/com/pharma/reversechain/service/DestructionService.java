@@ -1,17 +1,20 @@
 package com.pharma.reversechain.service;
 
+import com.pharma.reversechain.blockchain.FabricGatewayService;
 import com.pharma.reversechain.entity.*;
 import com.pharma.reversechain.repository.BatchRepository;
 import com.pharma.reversechain.repository.CertificateRepository;
 import com.pharma.reversechain.repository.DestructionRecordRepository;
 import com.pharma.reversechain.repository.InvalidRegistryRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class DestructionService {
@@ -22,6 +25,7 @@ public class DestructionService {
     private final BatchStateMachine stateMachine;
     private final BlockchainService blockchainService;
     private final InvalidRegistryRepository invalidRegistryRepository;
+    private final FabricGatewayService fabricGatewayService;
 
     @Transactional
     public DestructionRecord scheduleDestruction(com.pharma.reversechain.dto.ScheduleDestructionRequest request, User actor) {
@@ -48,7 +52,22 @@ public class DestructionService {
         record.setScheduledDate(request.getScheduledDate());
         record.setStatus(DestructionStatus.SCHEDULED);
 
-        return destructionRecordRepository.save(record);
+        DestructionRecord savedRecord = destructionRecordRepository.save(record);
+
+        // Record SENT_FOR_DISPOSAL on Fabric Audit Ledger
+        try {
+            fabricGatewayService.sendForDisposal(
+                    batch.getBatchId().toString(),
+                    savedRecord.getDestructionId().toString(),
+                    request.getQuantity(),
+                    request.getWasteFacilityId() != null ? request.getWasteFacilityId().toString() : "WasteFacilityOrg",
+                    request.getScheduledDate() != null ? request.getScheduledDate().toString() : LocalDateTime.now().toString()
+            );
+        } catch (Exception e) {
+            log.warn("Fabric audit record for sendForDisposal encountered exception: {}", e.getMessage());
+        }
+
+        return savedRecord;
     }
 
     @Transactional
@@ -64,13 +83,14 @@ public class DestructionService {
                     .orElseThrow(() -> new IllegalStateException("Destruction marked complete but no certificate found"));
         }
 
-        Batch batch = batchRepository.findById(record.getBatchId()).get();
+        Batch batch = batchRepository.findById(record.getBatchId())
+                .orElseThrow(() -> new IllegalArgumentException("Batch not found"));
 
         if (!record.getQuantity().equals(request.getQuantityDestroyed())) {
             throw new IllegalArgumentException("Destroyed quantity must match scheduled quantity for this record exactly");
         }
 
-        // Mock Blockchain Call
+        // Fabric Blockchain Call
         String txId = blockchainService.recordDestruction(request.getCertificateHash());
 
         // Update batch status and quantity
@@ -84,6 +104,20 @@ public class DestructionService {
         // Update Destruction Record
         record.setStatus(DestructionStatus.DESTROYED);
         destructionRecordRepository.save(record);
+
+        // Record DESTRUCTION_CONFIRMED with SHA-256 certificate hash on Fabric Audit Ledger
+        try {
+            fabricGatewayService.confirmDestruction(
+                    batch.getBatchId().toString(),
+                    record.getDestructionId().toString(),
+                    request.getQuantityDestroyed(),
+                    request.getDestructionDate() != null ? request.getDestructionDate().toString() : LocalDateTime.now().toString(),
+                    record.getDestructionId().toString(),
+                    request.getCertificateHash()
+            );
+        } catch (Exception e) {
+            log.warn("Fabric audit record for confirmDestruction encountered exception: {}", e.getMessage());
+        }
 
         // Add to Invalid Registry for Reentry Checks
         InvalidRegistry invalidRegistry = new InvalidRegistry();

@@ -1,0 +1,215 @@
+---
+Organizations:
+  - &OrdererOrg
+    Name: OrdererOrg
+    ID: OrdererMSP
+    MSPDir: ../organizations/ordererOrganizations/pharma.com/msp
+    Policies:
+      Reader:
+        Type: Signature
+        Rule: "OR('OrdererMSP.member')"
+      Writer:
+        Type: Signature
+        Rule: "OR('OrdererMSP.member')"
+      Admin:
+        Type: Signature
+        Rule: "OR('OrdererMSP.admin')"
+
+  - &ManufacturerOrg
+    Name: ManufacturerOrg
+    ID: ManufacturerMSP
+    MSPDir: ../organizations/peerOrganizations/manufacturer.pharma.com/msp
+    Policies:
+      Reader:
+        Type: Signature
+        Rule: "OR('ManufacturerMSP.admin', 'ManufacturerMSP.peer', 'ManufacturerMSP.client')"
+      Writer:
+        Type: Signature
+        Rule: "OR('ManufacturerMSP.admin', 'ManufacturerMSP.client')"
+      Admin:
+        Type: Signature
+        Rule: "OR('ManufacturerMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('ManufacturerMSP.peer')"
+    AnchorPeers:
+      - Host: peer0.manufacturer.pharma.com
+        Port: 7051
+
+  - &DistributorOrg
+    Name: DistributorOrg
+    ID: DistributorMSP
+    MSPDir: ../organizations/peerOrganizations/distributor.pharma.com/msp
+    Policies:
+      Reader:
+        Type: Signature
+        Rule: "OR('DistributorMSP.admin', 'DistributorMSP.peer', 'DistributorMSP.client')"
+      Writer:
+        Type: Signature
+        Rule: "OR('DistributorMSP.admin', 'DistributorMSP.client')"
+      Admin:
+        Type: Signature
+        Rule: "OR('DistributorMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('DistributorMSP.peer')"
+    AnchorPeers:
+      - Host: peer0.distributor.pharma.com
+        Port: 8051
+
+  - &RetailerOrg
+    Name: RetailerOrg
+    ID: RetailerMSP
+    MSPDir: ../organizations/peerOrganizations/retailer.pharma.com/msp
+    Policies:
+      Reader:
+        Type: Signature
+        Rule: "OR('RetailerMSP.admin', 'RetailerMSP.peer', 'RetailerMSP.client')"
+      Writer:
+        Type: Signature
+        Rule: "OR('RetailerMSP.admin', 'RetailerMSP.client')"
+      Admin:
+        Type: Signature
+        Rule: "OR('RetailerMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('RetailerMSP.peer')"
+    AnchorPeers:
+      - Host: peer0.retailer.pharma.com
+        Port: 9051
+
+  - &WasteFacilityOrg
+    Name: WasteFacilityOrg
+    ID: WasteFacilityMSP
+    MSPDir: ../organizations/peerOrganizations/wastefacility.pharma.com/msp
+    Policies:
+      Reader:
+        Type: Signature
+        Rule: "OR('WasteFacilityMSP.admin', 'WasteFacilityMSP.peer', 'WasteFacilityMSP.client')"
+      Writer:
+        Type: Signature
+        Rule: "OR('WasteFacilityMSP.admin', 'WasteFacilityMSP.client')"
+      Admin:
+        Type: Signature
+        Rule: "OR('WasteFacilityMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('WasteFacilityMSP.peer')"
+    AnchorPeers:
+      - Host: peer0.wastefacility.pharma.com
+        Port: 10051
+
+  - &ControllerOrg
+    Name: ControllerOrg
+    ID: ControllerMSP
+    MSPDir: ../organizations/peerOrganizations/controller.pharma.com/msp
+    Policies:
+      Reader:
+        Type: Signature
+        Rule: "OR('ControllerMSP.admin', 'ControllerMSP.peer', 'ControllerMSP.client')"
+      Writer:
+        Type: Signature
+        Rule: "OR('ControllerMSP.admin', 'ControllerMSP.client')"
+      Admin:
+        Type: Signature
+        Rule: "OR('ControllerMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('ControllerMSP.peer')"
+    AnchorPeers:
+      - Host: peer0.controller.pharma.com
+        Port: 11051
+
+Capabilities:
+  Channel: &ChannelCapabilities
+    V2_0: true
+  Orderer: &OrdererCapabilities
+    V2_0: true
+  Application: &ApplicationCapabilities
+    V2_5: true
+
+Application: &ApplicationDefaults
+  Organizations:
+  Policies:
+    LifecycleEndorsement:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Endorsement"
+    Endorsement:
+      Type: ImplicitMeta
+      Rule: "ANY Endorsement"
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+  Capabilities:
+    <<: *ApplicationCapabilities
+
+Orderer: &OrdererDefaults
+  OrdererType: etcdraft
+  Addresses:
+    - orderer.pharma.com:7050
+  BatchTimeout: 2s
+  BatchSize:
+    MaxMessageCount: 100
+    AbsoluteMaxBytes: 99 MB
+    PreferredMaxBytes: 512 KB
+  EtcdRaft:
+    Consenters:
+      - Host: orderer.pharma.com
+        Port: 7050
+        ClientTLSCert: ../organizations/ordererOrganizations/pharma.com/orderers/orderer.pharma.com/tls/server.crt
+        ServerTLSCert: ../organizations/ordererOrganizations/pharma.com/orderers/orderer.pharma.com/tls/server.crt
+  Organizations:
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+    BlockValidation:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+  Capabilities:
+    <<: *OrdererCapabilities
+
+Channel: &ChannelDefaults
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+  Capabilities:
+    <<: *ChannelCapabilities
+
+Profiles:
+  PharmaChannel:
+    Consortium: SampleConsortium
+    <<: *ChannelDefaults
+    Orderer:
+      <<: *OrdererDefaults
+      Organizations:
+        - *OrdererOrg
+      Capabilities: *OrdererCapabilities
+    Application:
+      <<: *ApplicationDefaults
+      Organizations:
+        - *ManufacturerOrg
+        - *DistributorOrg
+        - *RetailerOrg
+        - *WasteFacilityOrg
+        - *ControllerOrg
+      Capabilities: *ApplicationCapabilities
