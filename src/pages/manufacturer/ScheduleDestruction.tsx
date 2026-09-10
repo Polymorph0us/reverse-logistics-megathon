@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { StatusBadge } from "@/components/shared/StatusBadge"
 import { useToast } from "@/hooks/use-toast"
-import { Flame, CheckCircle, ShieldAlert, ArrowRight } from "lucide-react"
+import { Flame, CheckCircle, ShieldAlert } from "lucide-react"
 
 export function ScheduleDestruction() {
   const batches = useSharedStore(state => state.batches)

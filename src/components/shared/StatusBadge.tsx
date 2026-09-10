@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
-export type StatusType = "ACTIVE" | "EXPIRING_SOON" | "EXPIRED" | "RETURN_INITIATED" | "WITH_DISTRIBUTOR" | "WITH_MANUFACTURER" | "SCHEDULED_FOR_DESTRUCTION" | "DESTROYED" | "CLOSED" | "DISPUTED" | "PENDING" | "RECEIVED" | "COMPLETED" | "UNKNOWN" | "MATCHED" | "DISCREPANCY" | "AWAITING_DISTRIBUTOR";
+export type StatusType = "ACTIVE" | "EXPIRING_SOON" | "EXPIRED" | "RETURN_INITIATED" | "WITH_DISTRIBUTOR" | "WITH_MANUFACTURER" | "CONDITION_DENATURED_CONDEMNED" | "SCHEDULED_FOR_DESTRUCTION" | "DESTROYED" | "CLOSED" | "DISPUTED" | "PENDING" | "RECEIVED" | "COMPLETED" | "UNKNOWN" | "MATCHED" | "DISCREPANCY" | "AWAITING_DISTRIBUTOR";
 
 interface StatusBadgeProps {
   status: StatusType;
@@ -19,6 +19,7 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
       case "RETURN_INITIATED":
       case "WITH_DISTRIBUTOR":
       case "WITH_MANUFACTURER":
+      case "CONDITION_DENATURED_CONDEMNED":
       case "PENDING":
       case "AWAITING_DISTRIBUTOR":
         return "bg-amber-100 text-amber-800 hover:bg-amber-100 border-amber-200";

@@ -23,10 +23,9 @@ const PHASE_CONFIG: Record<KilnTelemetryReading["burnPhase"], { label: string; c
 
 // ── Telemetry Chart ───────────────────────────────────────────────────────────
 function TelemetryChart({ readings }: { readings: KilnTelemetryReading[] }) {
-  const maxTemp = 1200
   return (
     <div className="space-y-2">
-      {readings.map((r, i) => {
+      {readings.map((r) => {
         const cfg = PHASE_CONFIG[r.burnPhase]
         return (
           <div key={r.readingId} className="grid grid-cols-[80px_1fr_70px_70px_70px] gap-2 items-center text-[10px]">

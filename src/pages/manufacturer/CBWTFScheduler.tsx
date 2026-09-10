@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { useSharedStore } from "@/store/useSharedStore"
 import { generateEWTN, logIncineration, getEWTNs, getDenaturedTags } from "@/api/mockApi"
-import type { ElectronicWasteTransferNote, DenaturedBatchTag, IncinerationLog } from "@/api/types"
+import type { ElectronicWasteTransferNote, DenaturedBatchTag } from "@/api/types"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"

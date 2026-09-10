@@ -32,6 +32,7 @@ import { KilnIncineration } from "./pages/facility/KilnIncineration"
 import { RegulatorDashboardView } from "./pages/regulator/Dashboard"
 import { FraudAlerts } from "./pages/regulator/FraudAlerts"
 import { Investigation } from "./pages/regulator/Investigation"
+import { OrganizationsDirectory } from "./pages/regulator/OrganizationsDirectory"
 import { BatchPassportView } from "./pages/shared/BatchPassportView"
 
 function RequireAuth({ children, allowedRoles }: { children: ReactNode, allowedRoles?: string[] }) {
@@ -110,6 +111,7 @@ export default function App() {
 
           {/* Regulator */}
           <Route path="regulator/dashboard" element={<RequireAuth allowedRoles={["REGULATOR", "ADMIN"]}><RegulatorDashboardView /></RequireAuth>} />
+          <Route path="regulator/organizations" element={<RequireAuth allowedRoles={["REGULATOR", "ADMIN"]}><OrganizationsDirectory /></RequireAuth>} />
           <Route path="regulator/alerts" element={<RequireAuth allowedRoles={["REGULATOR", "ADMIN"]}><FraudAlerts /></RequireAuth>} />
           <Route path="regulator/investigation/:alertId" element={<RequireAuth allowedRoles={["REGULATOR", "ADMIN"]}><Investigation /></RequireAuth>} />
         </Route>

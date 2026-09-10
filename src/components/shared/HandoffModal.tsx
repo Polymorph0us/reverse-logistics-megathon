@@ -11,12 +11,9 @@ import {
   Clock, 
   KeyRound, 
   CheckCircle2, 
-  AlertTriangle, 
-  Hash, 
   Scale, 
   ShieldCheck, 
-  X, 
-  RefreshCw 
+  X 
 } from "lucide-react"
 
 interface HandoffModalProps {

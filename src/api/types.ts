@@ -7,6 +7,23 @@ export interface User {
   organizationName: string;
 }
 
+export type SectorType = "MANUFACTURER" | "DISTRIBUTOR" | "RETAILER" | "WASTE_FACILITY";
+
+export interface OrganizationNode {
+  id: string;
+  name: string;
+  type: SectorType | "REGULATOR";
+  licenseNumber: string;
+  city: string;
+  state: string;
+  complianceScore: number;
+  active: boolean;
+  contactEmail?: string;
+  contactPhone?: string;
+  registeredDate?: string;
+  address?: string;
+}
+
 export interface LoginResponse {
   token: string;
   user: User;
@@ -88,22 +105,6 @@ export interface ReceiveReturnResponse {
   reconciliationStatus: "MATCHED" | "DISCREPANCY";
   riskLevel: string;
   status: string;
-}
-
-export interface DestructionCertificate {
-  certificateId: string;
-  batchId: string;
-  quantityDestroyed: number;
-  destructionDate: string;
-  facility: { id: string; name: string };
-  certificateHash: string;
-  status: "DESTROYED";
-  blockchainTxId: string;
-  // Layer 4 extension
-  linkedBatchNumbers?: string[];   // Batch numbers this certificate covers
-  denaturedTagIds?: string[];      // References to pre-destruction denaturing events
-  blindScanVerified?: boolean;     // Whether blind-scan reconciliation was passed
-  blindScanDiscrepancies?: number; // Count of bags with hash mismatches at blind scan
 }
 
 export interface FraudAlert {
@@ -246,28 +247,28 @@ export interface IncinerationLog {
 export interface DestructionCertificate {
   certificateId: string;           // e.g. CERT-XIX-2025-00142
   batchId: string;
-  batchNumber: string;
+  batchNumber?: string;
   quantityDestroyed: number;       // Volume-locked: CANNOT exceed physically verified quantity
-  verifiedReceivedQuantity: number; // Gate: physically verified quantity from blind scan
+  verifiedReceivedQuantity?: number; // Gate: physically verified quantity from blind scan
   destructionDate: string;
-  facility: { id: string; name: string; regNumber: string };
+  facility: { id: string; name: string; regNumber?: string };
   status: "DESTROYED";
 
   // Gate references (all must be present to issue certificate)
-  blindScanVerified: boolean;      // Gate 1: Blind inward receipt confirmed
-  denaturedTagId: string;          // Gate 2: Denaturing proof photo confirmed
-  ewtnId: string;                  // Gate 3: E-WTN pickup scheduled
-  incinerationLogId: string;       // Gate 4: Temperature log ≥ 1050°C verified
+  blindScanVerified?: boolean;      // Gate 1: Blind inward receipt confirmed
+  denaturedTagId?: string;          // Gate 2: Denaturing proof photo confirmed
+  ewtnId?: string;                  // Gate 3: E-WTN pickup scheduled
+  incinerationLogId?: string;       // Gate 4: Temperature log ≥ 1050°C verified
 
   // Incineration details
-  primaryChamberTempC: number;
-  secondaryChamberTempC: number;
-  ashDisposalWaybill: string;
+  primaryChamberTempC?: number;
+  secondaryChamberTempC?: number;
+  ashDisposalWaybill?: string;
 
   // Cryptographic proof
   certificateHash: string;         // SHA-256 of all fields
   blockchainTxId: string;          // Key-value hash chain Tx ID
-  issuedByOfficerId: string;       // CBWTF authorizing officer ID
+  issuedByOfficerId?: string;       // CBWTF authorizing officer ID
 
   // Optional extras
   linkedBatchNumbers?: string[];

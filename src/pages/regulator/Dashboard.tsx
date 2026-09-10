@@ -1,17 +1,20 @@
 import { useEffect, useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { getRegulatorDashboard } from "@/api/mockApi"
 import type { RegulatorDashboard } from "@/api/types"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertTriangle, Package, ShieldAlert, BarChart3, TrendingUp, Building2, Eye } from "lucide-react"
+import { AlertTriangle, Package, ShieldAlert, BarChart3, TrendingUp, Building2, Eye, ArrowUpRight } from "lucide-react"
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, Legend, Cell } from "recharts"
 import { useSharedStore } from "@/store/useSharedStore"
 
 export function RegulatorDashboardView() {
+  const navigate = useNavigate()
   const [kpis, setKpis] = useState<RegulatorDashboard | null>(null)
   
   const liveAlerts = useSharedStore(state => state.fraudAlerts)
   const destructions = useSharedStore(state => state.destructions)
   const batches = useSharedStore(state => state.batches)
+  const organizations = useSharedStore(state => state.organizations)
 
   useEffect(() => {
     getRegulatorDashboard().then(setKpis)
@@ -66,16 +69,27 @@ export function RegulatorDashboardView() {
           </CardContent>
         </Card>
         
-        <Card>
+        <Card 
+          onClick={() => navigate("/regulator/organizations")}
+          className="cursor-pointer hover:shadow-md transition-all hover:border-emerald-300 group"
+        >
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium text-gray-500">Organizations</CardTitle>
-            <Building2 className="h-4 w-4 text-gray-400" />
+            <CardTitle className="text-sm font-medium text-gray-500 group-hover:text-emerald-700 transition-colors">
+              Organizations (4 Sectors)
+            </CardTitle>
+            <div className="flex items-center text-emerald-600">
+              <Building2 className="h-4 w-4 text-gray-400 group-hover:text-emerald-600 transition-colors" />
+              <ArrowUpRight className="h-3.5 w-3.5 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {4}
+            <div className="text-2xl font-bold text-gray-900 group-hover:text-emerald-700 transition-colors">
+              {organizations.length > 0 ? organizations.length : 14}
             </div>
-            <p className="text-xs text-gray-500 mt-1">Active nodes in network</p>
+            <p className="text-xs text-gray-500 mt-1 flex items-center justify-between">
+              <span>Mfr · Dist · Ret · CBWTF</span>
+              <span className="text-emerald-600 font-medium group-hover:underline">Manage & Onboard →</span>
+            </p>
           </CardContent>
         </Card>
 

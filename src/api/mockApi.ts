@@ -17,6 +17,7 @@ import type {
   FinalIncinerationRecord,
   KilnTelemetryReading,
   KilnWeightVerification,
+  OrganizationNode,
 } from "./types";
 import { useSharedStore } from "@/store/useSharedStore";
 import { MOCK_USERS } from "@/store/seedData";
@@ -129,7 +130,7 @@ export const createReturn = async (
     initiatedBy: "City Pharmacy (Jaipur)",
     createdAt: new Date().toISOString(),
     pickupStatus: "PENDING",
-    condition: details?.condition || "Intact / Original Pack",
+    condition: details?.condition || reason || "Intact / Original Pack",
     consignmentCode,
     sealToken,
     grossWeightGrams,
@@ -1112,7 +1113,7 @@ export const runKilnIncineration = async (
   // ── Plant Manager SHA-256 Signature ────────────────────────────────────
   const sigPayload        = `${recordId}|${plantManagerId}|${kilnStart.toISOString()}|${mcm.merkleRoot}`;
   const sigHash           = await sha256Hex(sigPayload);
-  const certPayload       = `${certId}|${recordId}|${destroyedBatchNumbers.join(",")}|${totalUnitsDestroyed}|${peakSecondaryChamberTempC}|${sigHash}`;
+  const certPayload       = `${certId}|${recordId}|${destroyedBatchNumbers.join(",")}|${totalUnitsDestroyed}|${peakSecondary}|${sigHash}`;
   const certificateHash   = await sha256Hex(certPayload);
   const blockchainTxId    = "0x" + (await sha256Hex(certificateHash + supervisorId)).substring(0, 60);
 
@@ -1185,3 +1186,89 @@ export const getFinalIncinerationRecords = async (): Promise<FinalIncinerationRe
   ensureSeeded();
   return useSharedStore.getState().finalIncinerationRecords;
 };
+
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Organizations Subsystem (4 Sectors: Manufacturer, Distributor, Retailer, Waste Facility)
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+export const getOrganizations = async (): Promise<OrganizationNode[]> => {
+  ensureSeeded();
+  try {
+    const res = await fetch("/api/organizations");
+    if (res.ok) {
+      const backendOrgs = await res.json();
+      if (Array.isArray(backendOrgs) && backendOrgs.length > 0) {
+        // Map backend entities to OrganizationNode
+        const mapped: OrganizationNode[] = backendOrgs.map((bo: any) => ({
+          id: String(bo.id),
+          name: bo.name,
+          type: bo.type,
+          licenseNumber: bo.licenseNumber || "N/A",
+          city: bo.city || "Unknown",
+          state: bo.state || "Unknown",
+          complianceScore: bo.complianceScore ?? 100,
+          active: bo.active ?? true,
+          contactEmail: bo.contactEmail || `contact@${bo.name.toLowerCase().replace(/[^a-z0-9]/g, "")}.com`,
+          contactPhone: bo.contactPhone || "+91 80000 00000",
+          registeredDate: bo.registeredDate || "2023-01-01",
+          address: bo.address || `${bo.city}, ${bo.state}`,
+        }));
+
+        // Merge any locally created ones that may not be in backend
+        const localOrgs = useSharedStore.getState().organizations || [];
+        const mergedMap = new Map<string, OrganizationNode>();
+        localOrgs.forEach(o => mergedMap.set(o.licenseNumber || o.name, o));
+        mapped.forEach(o => mergedMap.set(o.licenseNumber || o.name, o));
+        const mergedList = Array.from(mergedMap.values());
+        
+        return mergedList;
+      }
+    }
+  } catch (e) {
+    console.warn("Backend /api/organizations unreachable, using local store:", e);
+  }
+  return useSharedStore.getState().organizations || [];
+};
+
+export const createOrganization = async (org: Omit<OrganizationNode, "id">): Promise<OrganizationNode> => {
+  const newOrg: OrganizationNode = {
+    ...org,
+    id: `ORG-${Date.now().toString(36).toUpperCase()}`,
+    complianceScore: org.complianceScore ?? 100,
+    active: org.active ?? true,
+    registeredDate: org.registeredDate || new Date().toISOString().split("T")[0],
+  };
+
+  // Attempt backend persistence
+  try {
+    const res = await fetch("/api/organizations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: newOrg.name,
+        type: newOrg.type,
+        licenseNumber: newOrg.licenseNumber,
+        city: newOrg.city,
+        state: newOrg.state,
+        complianceScore: newOrg.complianceScore,
+        active: newOrg.active,
+      }),
+    });
+    if (res.ok) {
+      const saved = await res.json();
+      const nodeWithId: OrganizationNode = {
+        ...newOrg,
+        id: String(saved.id),
+      };
+      useSharedStore.getState().addOrganization(nodeWithId);
+      return nodeWithId;
+    }
+  } catch (e) {
+    console.warn("Backend save failed, saved to local store:", e);
+  }
+
+  useSharedStore.getState().addOrganization(newOrg);
+  return newOrg;
+};
+

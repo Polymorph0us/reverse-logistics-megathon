@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { BatchPassport, FraudAlert, Notification, ReturnRequest, DestructionCertificate, TimelineEvent, MasterConsignment, DenaturedBatchTag, ElectronicWasteTransferNote, IncinerationLog, FinalIncinerationRecord } from '@/api/types';
+import type { BatchPassport, FraudAlert, Notification, ReturnRequest, DestructionCertificate, TimelineEvent, MasterConsignment, DenaturedBatchTag, ElectronicWasteTransferNote, IncinerationLog, FinalIncinerationRecord, OrganizationNode } from '@/api/types';
+import { INITIAL_ORGANIZATIONS } from './seedData';
 
 interface SharedState {
   batches: BatchPassport[];
@@ -13,6 +14,7 @@ interface SharedState {
   ewtns: ElectronicWasteTransferNote[];     // Layer 4
   incinerationLogs: IncinerationLog[];      // Layer 4
   finalIncinerationRecords: FinalIncinerationRecord[]; // Layer 5
+  organizations: OrganizationNode[];
   
   // Actions
   addBatch: (batch: BatchPassport) => void;
@@ -40,6 +42,11 @@ interface SharedState {
   // Layer 5 actions
   addFinalIncinerationRecord: (rec: FinalIncinerationRecord) => void;
   
+  // Organization actions
+  addOrganization: (org: OrganizationNode) => void;
+  updateOrganization: (id: string, updates: Partial<OrganizationNode>) => void;
+  deleteOrganization: (id: string) => void;
+
   clearAllData: () => void;
   seedIfEmpty: () => void;
 }
@@ -57,6 +64,7 @@ export const useSharedStore = create<SharedState>()(
       ewtns: [],
       incinerationLogs: [],
       finalIncinerationRecords: [],
+      organizations: INITIAL_ORGANIZATIONS,
       
       clearAllData: () => {
         try {
@@ -74,7 +82,8 @@ export const useSharedStore = create<SharedState>()(
           denaturedTags: [],
           ewtns: [],
           incinerationLogs: [],
-          finalIncinerationRecords: []
+          finalIncinerationRecords: [],
+          organizations: INITIAL_ORGANIZATIONS,
         });
       },
 
@@ -115,8 +124,24 @@ export const useSharedStore = create<SharedState>()(
       // Layer 5
       addFinalIncinerationRecord: (rec) => set((state) => ({ finalIncinerationRecords: [rec, ...state.finalIncinerationRecords] })),
       
+      // Organization actions
+      addOrganization: (org) => set((state) => ({
+        organizations: [org, ...(state.organizations || [])]
+      })),
+      updateOrganization: (id, updates) => set((state) => ({
+        organizations: (state.organizations || []).map(o => o.id === id ? { ...o, ...updates } : o)
+      })),
+      deleteOrganization: (id) => set((state) => ({
+        organizations: (state.organizations || []).filter(o => o.id !== id)
+      })),
+
       seedIfEmpty: () => {
-        // Empty by default as requested by user
+        set((state) => {
+          if (!state.organizations || state.organizations.length === 0) {
+            return { organizations: INITIAL_ORGANIZATIONS };
+          }
+          return {};
+        });
       }
     }),
     {

@@ -4,7 +4,6 @@ import { generateMCM, getMasterConsignments } from "@/api/mockApi"
 import type { ReturnRequest, MasterConsignment } from "@/api/types"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import {
   PackageCheck,
@@ -12,7 +11,6 @@ import {
   ShieldCheck,
   Lock,
   CheckCircle2,
-  AlertTriangle,
   ChevronRight,
   Loader2,
   Box,

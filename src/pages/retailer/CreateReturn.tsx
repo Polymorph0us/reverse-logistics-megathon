@@ -15,7 +15,6 @@ import {
   Truck, 
   Tag, 
   CheckCircle2, 
-  AlertTriangle,
   ArrowLeft,
   Sparkles,
   Info

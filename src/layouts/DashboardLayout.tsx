@@ -1,7 +1,7 @@
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom"
 import { useAuthStore } from "@/store/useAuthStore"
 import { useSharedStore } from "@/store/useSharedStore"
-import { LayoutDashboard, Package, AlertTriangle, FileText, LogOut, Activity, ShieldAlert, ShieldCheck, Bell, GitBranch, ScanLine, Truck, Flame } from "lucide-react"
+import { LayoutDashboard, Package, AlertTriangle, FileText, LogOut, Activity, ShieldAlert, ShieldCheck, Bell, GitBranch, ScanLine, Truck, Flame, Building2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
@@ -45,6 +45,7 @@ export function DashboardLayout() {
       case "ADMIN":
         return [
           { label: "Dashboard", href: "/regulator/dashboard", icon: LayoutDashboard },
+          { label: "Organizations", href: "/regulator/organizations", icon: Building2 },
           { label: "Fraud Alerts", href: "/regulator/alerts", icon: ShieldAlert },
         ]
       default:

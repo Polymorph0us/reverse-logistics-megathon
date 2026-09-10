@@ -9,9 +9,6 @@ import {
   ArrowLeft, 
   FileText, 
   CheckCircle2, 
-  AlertOctagon, 
-  Building2, 
-  Calendar,
   Lock
 } from "lucide-react"
 

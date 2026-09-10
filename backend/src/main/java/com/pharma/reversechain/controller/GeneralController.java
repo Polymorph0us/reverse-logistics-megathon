@@ -12,6 +12,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -97,6 +99,18 @@ public class GeneralController {
                 .map(this::toOrganizationResponse)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/organizations")
+    public ResponseEntity<OrganizationResponse> createOrganization(@RequestBody Organization org) {
+        if (org.getComplianceScore() == null) {
+            org.setComplianceScore(100);
+        }
+        if (org.getActive() == null) {
+            org.setActive(true);
+        }
+        Organization saved = organizationRepository.save(org);
+        return ResponseEntity.ok(toOrganizationResponse(saved));
     }
 
     @GetMapping("/products")
