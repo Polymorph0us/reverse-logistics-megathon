@@ -37,17 +37,17 @@ public class RegulatorController {
 
     @GetMapping("/dashboard")
     public ResponseEntity<Map<String, Object>> getDashboard() {
-        long mfrCount = organizationRepository.findAll().stream().filter(o -> o.getType() == OrganizationType.MANUFACTURER).count();
-        long distCount = organizationRepository.findAll().stream().filter(o -> o.getType() == OrganizationType.DISTRIBUTOR).count();
-        long retCount = organizationRepository.findAll().stream().filter(o -> o.getType() == OrganizationType.RETAILER).count();
+        long mfrCount = organizationRepository.countByType(OrganizationType.MANUFACTURER);
+        long distCount = organizationRepository.countByType(OrganizationType.DISTRIBUTOR);
+        long retCount = organizationRepository.countByType(OrganizationType.RETAILER);
 
         long totalBatches = batchRepository.count();
-        long expiredBatches = batchRepository.findAll().stream().filter(b -> b.getCurrentStatus() == BatchStatus.EXPIRED).count();
-        long destroyedBatches = batchRepository.findAll().stream().filter(b -> b.getCurrentStatus() == BatchStatus.DESTROYED).count();
+        long expiredBatches = batchRepository.countByCurrentStatus(BatchStatus.EXPIRED);
+        long destroyedBatches = batchRepository.countByCurrentStatus(BatchStatus.DESTROYED);
         long returnsInProgress = returnRequestRepository.count();
 
         long totalAlerts = fraudAlertRepository.count();
-        long criticalAlerts = fraudAlertRepository.findAll().stream().filter(a -> a.getSeverity() == AlertSeverity.CRITICAL).count();
+        long criticalAlerts = fraudAlertRepository.countBySeverity(AlertSeverity.CRITICAL);
 
         Map<String, Object> resp = new HashMap<>();
         resp.put("totalManufacturers", mfrCount);

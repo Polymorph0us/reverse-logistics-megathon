@@ -14,4 +14,5 @@ public interface MasterConsignmentRepository extends JpaRepository<MasterConsign
     List<MasterConsignment> findByDistributorId(UUID distributorId);
     List<MasterConsignment> findByTargetManufacturerId(UUID targetManufacturerId);
     Optional<MasterConsignment> findBySealId(String sealId);
+    org.springframework.data.domain.Page<MasterConsignment> findByDistributorIdOrTargetManufacturerId(UUID distributorId, UUID targetManufacturerId, org.springframework.data.domain.Pageable pageable);
 }

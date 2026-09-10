@@ -50,4 +50,7 @@ public class MasterConsignment {
 
     @Column(name = "received_at")
     private LocalDateTime receivedAt;
+
+    @Version
+    private Long version;
 }

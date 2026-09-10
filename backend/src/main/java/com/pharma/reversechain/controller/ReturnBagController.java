@@ -16,6 +16,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/return-bags")
 @RequiredArgsConstructor
+@org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('DISTRIBUTOR', 'MANUFACTURER', 'MEDICAL_REP', 'RETAILER', 'REGULATOR', 'ADMIN')")
 @Tag(name = "Return Bags", description = "TER-Bag / Return-Bag lifecycle management APIs")
 public class ReturnBagController {
 
@@ -33,6 +34,11 @@ public class ReturnBagController {
     public ResponseEntity<ReturnBag> getReturnBag(@PathVariable UUID id, @AuthenticationPrincipal User actor) {
         ReturnBag bag = returnBagRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("TER-Bag not found: " + id));
+        if (!"ADMIN".equals(actor.getRole()) && !"REGULATOR".equals(actor.getRole())) {
+            if (!bag.getCurrentOrganizationId().equals(actor.getOrganizationId())) {
+                throw new IllegalStateException("Unauthorized: TER-Bag does not belong to your organization");
+            }
+        }
         return ResponseEntity.ok(bag);
     }
 
@@ -41,6 +47,11 @@ public class ReturnBagController {
     public ResponseEntity<ReturnBag> getReturnBagByBagId(@PathVariable String bagId, @AuthenticationPrincipal User actor) {
         ReturnBag bag = returnBagRepository.findByBagId(bagId)
                 .orElseThrow(() -> new IllegalArgumentException("TER-Bag not found: " + bagId));
+        if (!"ADMIN".equals(actor.getRole()) && !"REGULATOR".equals(actor.getRole())) {
+            if (!bag.getCurrentOrganizationId().equals(actor.getOrganizationId())) {
+                throw new IllegalStateException("Unauthorized: TER-Bag does not belong to your organization");
+            }
+        }
         return ResponseEntity.ok(bag);
     }
 }

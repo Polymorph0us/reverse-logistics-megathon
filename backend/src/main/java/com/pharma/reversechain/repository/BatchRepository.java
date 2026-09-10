@@ -8,6 +8,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import com.pharma.reversechain.entity.BatchStatus;
 
 @Repository
 public interface BatchRepository extends JpaRepository<Batch, UUID> {
@@ -15,4 +16,5 @@ public interface BatchRepository extends JpaRepository<Batch, UUID> {
             UUID manufacturerId, String batchNumber, LocalDate manufacturingDate, LocalDate expiryDate);
 
     List<Batch> findByBatchNumber(String batchNumber);
+    long countByCurrentStatus(BatchStatus currentStatus);
 }

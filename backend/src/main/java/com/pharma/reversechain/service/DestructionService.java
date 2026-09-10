@@ -71,9 +71,7 @@ public class DestructionService {
 
         // Idempotency check
         if (record.getStatus() == DestructionStatus.DESTROYED) {
-            Certificate existingCert = certificateRepository.findAll().stream()
-                    .filter(c -> c.getDestructionId().equals(destructionId))
-                    .findFirst()
+            Certificate existingCert = certificateRepository.findByDestructionId(destructionId)
                     .orElseThrow(() -> new IllegalStateException("Destruction marked complete but no certificate found"));
             log.info("Destruction {} already confirmed, returning existing certificate {}", destructionId, existingCert.getCertificateId());
             return existingCert;

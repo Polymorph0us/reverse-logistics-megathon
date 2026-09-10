@@ -11,4 +11,5 @@ import java.util.UUID;
 public interface DisputeRepository extends JpaRepository<Dispute, UUID> {
     List<Dispute> findByTrackingId(String trackingId);
     List<Dispute> findByReporterOrganizationId(UUID reporterOrganizationId);
+    org.springframework.data.domain.Page<Dispute> findByReporterOrganizationId(UUID reporterOrganizationId, org.springframework.data.domain.Pageable pageable);
 }

@@ -36,6 +36,9 @@ public class ReturnBag {
     @Column(nullable = false)
     private ReturnBagStatus status;
 
+    @Version
+    private Long version;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
     

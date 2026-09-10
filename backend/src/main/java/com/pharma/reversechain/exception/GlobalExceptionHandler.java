@@ -25,6 +25,11 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.CONFLICT, ex.getMessage());
     }
 
+    @ExceptionHandler(org.springframework.dao.OptimisticLockingFailureException.class)
+    public ResponseEntity<ErrorResponse> handleOptimisticLockingFailureException(org.springframework.dao.OptimisticLockingFailureException ex) {
+        return buildErrorResponse(HttpStatus.CONFLICT, "Concurrent modification detected. Please refresh and try again.");
+    }
+
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException ex) {
         return buildErrorResponse(HttpStatus.FORBIDDEN, "Access Denied");

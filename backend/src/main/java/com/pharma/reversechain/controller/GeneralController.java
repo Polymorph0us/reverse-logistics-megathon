@@ -38,13 +38,12 @@ public class GeneralController {
 
     @GetMapping({"/dashboard", "/dashboard/kpis"})
     public ResponseEntity<Map<String, Object>> getDashboard() {
-        List<Batch> allBatches = batchRepository.findAll();
-        long totalBatches = allBatches.size();
-        long activeBatches = allBatches.stream().filter(b -> b.getCurrentStatus() == BatchStatus.ACTIVE).count();
-        long expiringSoon = allBatches.stream().filter(b -> b.getCurrentStatus() == BatchStatus.EXPIRING_SOON).count();
-        long expired = allBatches.stream().filter(b -> b.getCurrentStatus() == BatchStatus.EXPIRED).count();
-        long destroyed = allBatches.stream().filter(b -> b.getCurrentStatus() == BatchStatus.DESTROYED).count();
-        long awaitingDestruction = allBatches.stream().filter(b -> b.getCurrentStatus() == BatchStatus.SCHEDULED_FOR_DESTRUCTION).count();
+        long totalBatches = batchRepository.count();
+        long activeBatches = batchRepository.countByCurrentStatus(BatchStatus.ACTIVE);
+        long expiringSoon = batchRepository.countByCurrentStatus(BatchStatus.EXPIRING_SOON);
+        long expired = batchRepository.countByCurrentStatus(BatchStatus.EXPIRED);
+        long destroyed = batchRepository.countByCurrentStatus(BatchStatus.DESTROYED);
+        long awaitingDestruction = batchRepository.countByCurrentStatus(BatchStatus.SCHEDULED_FOR_DESTRUCTION);
         long returnsPending = returnRequestRepository.count();
         long totalAlerts = fraudAlertRepository.count();
 

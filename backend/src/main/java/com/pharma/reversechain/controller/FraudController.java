@@ -17,7 +17,20 @@ public class FraudController {
     private final FraudAlertRepository fraudAlertRepository;
 
     @GetMapping({"/alerts", "/fraud/alerts"})
-    public Page<FraudAlert> getAlerts(Pageable pageable) {
-        return fraudAlertRepository.findAll(pageable);
+    public Page<com.pharma.reversechain.dto.FraudAlertResponse> getAlerts(Pageable pageable) {
+        return fraudAlertRepository.findAll(pageable).map(alert -> {
+            com.pharma.reversechain.dto.FraudAlertResponse response = new com.pharma.reversechain.dto.FraudAlertResponse();
+            response.setAlertId(alert.getAlertId());
+            response.setType(alert.getType());
+            response.setSeverity(alert.getSeverity());
+            response.setStatus(alert.getStatus());
+            response.setBatchId(alert.getBatchId());
+            response.setBatchNumber(alert.getBatchNumber());
+            response.setDetectedAt(alert.getDetectedAt());
+            response.setLocation(alert.getLocation());
+            response.setOrganizationId(alert.getOrganizationId());
+            response.setMessage(alert.getMessage());
+            return response;
+        });
     }
 }

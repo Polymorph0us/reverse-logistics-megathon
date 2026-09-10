@@ -15,4 +15,5 @@ public interface FraudAlertRepository extends JpaRepository<FraudAlert, UUID> {
     List<FraudAlert> findByBatchId(UUID batchId);
     List<FraudAlert> findByStatus(AlertStatus status);
     List<FraudAlert> findBySeverity(AlertSeverity severity);
+    long countBySeverity(AlertSeverity severity);
 }

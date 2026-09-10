@@ -8,4 +8,5 @@ import java.util.UUID;
 
 @Repository
 public interface CertificateRepository extends JpaRepository<Certificate, UUID> {
+    java.util.Optional<Certificate> findByDestructionId(UUID destructionId);
 }

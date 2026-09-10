@@ -47,4 +47,7 @@ public class Dispute {
 
     @Column(name = "resolved_at")
     private LocalDateTime resolvedAt;
+
+    @Version
+    private Long version;
 }

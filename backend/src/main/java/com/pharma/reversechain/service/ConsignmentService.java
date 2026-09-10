@@ -57,13 +57,22 @@ public class ConsignmentService {
 
     @Transactional(readOnly = true)
     public Page<MasterConsignment> listConsignments(User actor, Pageable pageable) {
-        return consignmentRepository.findAll(pageable);
+        if ("ADMIN".equals(actor.getRole()) || "REGULATOR".equals(actor.getRole())) {
+            return consignmentRepository.findAll(pageable);
+        }
+        return consignmentRepository.findByDistributorIdOrTargetManufacturerId(actor.getOrganizationId(), actor.getOrganizationId(), pageable);
     }
 
     @Transactional(readOnly = true)
     public MasterConsignment getConsignment(UUID mcmId, User actor) {
-        return consignmentRepository.findById(mcmId)
+        MasterConsignment mcm = consignmentRepository.findById(mcmId)
                 .orElseThrow(() -> new IllegalArgumentException("MCM not found: " + mcmId));
+        if (!"ADMIN".equals(actor.getRole()) && !"REGULATOR".equals(actor.getRole())) {
+            if (!mcm.getDistributorId().equals(actor.getOrganizationId()) && !mcm.getTargetManufacturerId().equals(actor.getOrganizationId())) {
+                throw new IllegalStateException("Unauthorized: You do not have access to this MCM");
+            }
+        }
+        return mcm;
     }
 
     @Transactional
@@ -96,7 +105,8 @@ public class ConsignmentService {
             List<ConsignmentItem> existing = consignmentItemRepository.findByReturnBagId(bag.getId());
             for (ConsignmentItem ei : existing) {
                 if (ei.getMcmId().equals(mcmId)) {
-                    throw new IllegalStateException("TER-Bag " + bagId + " is already in this MCM");
+                    log.info("TER-Bag {} is already in this MCM. Ignoring duplicate add.", bagId);
+                    continue; // Idempotent: already added
                 }
             }
 
@@ -120,6 +130,10 @@ public class ConsignmentService {
         MasterConsignment mcm = consignmentRepository.findById(mcmId)
                 .orElseThrow(() -> new IllegalArgumentException("MCM not found: " + mcmId));
 
+        if (mcm.getStatus() == ConsignmentStatus.SEALED && sealId.equals(mcm.getSealId())) {
+            log.info("MCM {} is already sealed with sealId {}. Returning existing.", mcmId, sealId);
+            return mcm; // Idempotent
+        }
         if (mcm.getStatus() != ConsignmentStatus.OPEN) {
             throw new IllegalStateException("Cannot seal MCM with status: " + mcm.getStatus());
         }
@@ -149,6 +163,10 @@ public class ConsignmentService {
         MasterConsignment mcm = consignmentRepository.findById(mcmId)
                 .orElseThrow(() -> new IllegalArgumentException("MCM not found: " + mcmId));
 
+        if (mcm.getStatus() == ConsignmentStatus.DISPATCHED) {
+            log.info("MCM {} is already dispatched. Returning existing.", mcmId);
+            return mcm; // Idempotent
+        }
         if (mcm.getStatus() != ConsignmentStatus.SEALED) {
             throw new IllegalStateException("Cannot dispatch MCM with status: " + mcm.getStatus() + ". MCM must be SEALED first.");
         }
@@ -173,6 +191,10 @@ public class ConsignmentService {
         MasterConsignment mcm = consignmentRepository.findById(mcmId)
                 .orElseThrow(() -> new IllegalArgumentException("MCM not found: " + mcmId));
 
+        if (mcm.getStatus() == ConsignmentStatus.RECEIVED || mcm.getStatus() == ConsignmentStatus.COMPROMISED) {
+            log.info("MCM {} is already processed (Status: {}). Returning existing.", mcmId, mcm.getStatus());
+            return mcm; // Idempotent
+        }
         if (mcm.getStatus() != ConsignmentStatus.DISPATCHED) {
             throw new IllegalStateException("Cannot receive MCM with status: " + mcm.getStatus() + ". MCM must be DISPATCHED.");
         }

@@ -54,6 +54,9 @@ public class ReturnRequest {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @Version
+    private Long version;
+
     @Column(name = "pickup_status")
     private String pickupStatus;
 

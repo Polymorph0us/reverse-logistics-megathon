@@ -8,4 +8,5 @@ import java.util.UUID;
 
 @Repository
 public interface OrganizationRepository extends JpaRepository<Organization, UUID> {
+    long countByType(com.pharma.reversechain.entity.OrganizationType type);
 }

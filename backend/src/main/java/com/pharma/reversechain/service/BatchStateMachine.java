@@ -91,8 +91,8 @@ public class BatchStateMachine {
                 hexString.append(hex);
             }
             return hexString.toString();
-        } catch (Exception e) {
-            return UUID.randomUUID().toString();
+        } catch (java.security.NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 not available", e);
         }
     }
 }

@@ -350,4 +350,46 @@ public class EndToEndReversePassTest {
                         .with(as(distrib, "DISTRIBUTOR")))
                 .andExpect(status().isConflict()); // 409 - cannot dispatch unsealed
     }
+    // ─────────────────────────────────────────────
+    // IDEMPOTENCY PATH: Dispatch twice
+    // ─────────────────────────────────────────────
+
+    @Test
+    public void testIdempotencyDispatchTwice() throws Exception {
+        User distrib = user("bob@natdist.com");
+        User mfr     = user("alice@pharmacorp.com");
+
+        // Create MCM
+        String mcmJson = post("/api/consignments",
+                "{\"targetManufacturerId\":\"" + mfr.getOrganizationId() + "\"}",
+                as(distrib, "DISTRIBUTOR"));
+        String mcmId = objectMapper.readTree(mcmJson).get("id").asText();
+
+        // Create Bag
+        String bagJson = post("/api/consignments/return-bags",
+                "{\"trackingId\":\"RP-IND-P12345\",\"quantity\":30}",
+                as(distrib, "DISTRIBUTOR"));
+        String bagId = objectMapper.readTree(bagJson).get("bagId").asText();
+
+        // Add bag
+        post("/api/consignments/" + mcmId + "/bags",
+                "{\"bagIds\":[\"" + bagId + "\"]}",
+                as(distrib, "DISTRIBUTOR"));
+
+        // Seal
+        post("/api/consignments/" + mcmId + "/seal",
+                "{\"sealId\":\"SEAL-IDEMPOTENT\"}",
+                as(distrib, "DISTRIBUTOR"));
+
+        // Dispatch 1 (should succeed)
+        post("/api/consignments/" + mcmId + "/dispatch", "", as(distrib, "DISTRIBUTOR"));
+
+        // Dispatch 2 (should succeed idempotently, status 200)
+        mockMvc.perform(
+                org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .post("/api/consignments/" + mcmId + "/dispatch")
+                        .with(as(distrib, "DISTRIBUTOR")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("DISPATCHED"));
+    }
 }

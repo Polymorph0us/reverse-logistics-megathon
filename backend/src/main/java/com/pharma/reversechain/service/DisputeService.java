@@ -69,14 +69,23 @@ public class DisputeService {
     }
 
     @Transactional(readOnly = true)
-    public Page<Dispute> getDisputes(Pageable pageable) {
-        return disputeRepository.findAll(pageable);
+    public Page<Dispute> getDisputes(User actor, Pageable pageable) {
+        if ("ADMIN".equals(actor.getRole()) || "REGULATOR".equals(actor.getRole())) {
+            return disputeRepository.findAll(pageable);
+        }
+        return disputeRepository.findByReporterOrganizationId(actor.getOrganizationId(), pageable);
     }
 
     @Transactional(readOnly = true)
-    public Dispute getDispute(UUID id) {
-        return disputeRepository.findById(id)
+    public Dispute getDispute(UUID id, User actor) {
+        Dispute dispute = disputeRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Dispute not found: " + id));
+        if (!"ADMIN".equals(actor.getRole()) && !"REGULATOR".equals(actor.getRole())) {
+            if (!dispute.getReporterOrganizationId().equals(actor.getOrganizationId())) {
+                throw new IllegalStateException("Unauthorized: You do not have access to this Dispute");
+            }
+        }
+        return dispute;
     }
 
     @Transactional(readOnly = true)

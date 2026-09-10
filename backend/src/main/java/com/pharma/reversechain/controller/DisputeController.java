@@ -18,6 +18,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/disputes")
 @RequiredArgsConstructor
+@org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('DISTRIBUTOR', 'MANUFACTURER', 'MEDICAL_REP', 'RETAILER', 'REGULATOR', 'ADMIN')")
 @Tag(name = "Disputes", description = "Quantity discrepancy dispute management APIs")
 public class DisputeController {
 
@@ -26,13 +27,13 @@ public class DisputeController {
     @GetMapping
     @Operation(summary = "List all disputes")
     public ResponseEntity<Page<Dispute>> listDisputes(@AuthenticationPrincipal User actor, Pageable pageable) {
-        return ResponseEntity.ok(disputeService.getDisputes(pageable));
+        return ResponseEntity.ok(disputeService.getDisputes(actor, pageable));
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get a dispute by ID")
     public ResponseEntity<Dispute> getDispute(@PathVariable UUID id, @AuthenticationPrincipal User actor) {
-        return ResponseEntity.ok(disputeService.getDispute(id));
+        return ResponseEntity.ok(disputeService.getDispute(id, actor));
     }
 
     @PostMapping("/{id}/resolve")
