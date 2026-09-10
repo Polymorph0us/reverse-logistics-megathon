@@ -291,8 +291,8 @@ public class AllEndpointsIntegrationTest {
         ConfirmDestructionRequest confirmReq = new ConfirmDestructionRequest();
         confirmReq.setQuantityDestroyed(45);
         confirmReq.setDestructionDate(LocalDateTime.now());
-        confirmReq.setCertificateHash("sha256:abc123mockcertificatedigest456");
-        confirmReq.setMethod("INCINERATION_HIGH_TEMP");
+        confirmReq.setDestructionMethod("INCINERATION_HIGH_TEMP");
+        confirmReq.setFacilityLicense("WF-LICENSE-001");
 
         MvcResult certRes = mockMvc.perform(post("/api/destruction/" + createdDestructionId + "/certificate")
                         .header("Authorization", "Bearer " + wasteFacilityToken)
@@ -301,7 +301,7 @@ public class AllEndpointsIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("VERIFIED"))
                 .andExpect(jsonPath("$.blockchainTxId").isNotEmpty())
-                .andExpect(jsonPath("$.certificateHash").value("sha256:abc123mockcertificatedigest456"))
+                .andExpect(jsonPath("$.certificateHash").isNotEmpty())
                 .andReturn();
 
         createdCertificateId = UUID.fromString(objectMapper.readTree(certRes.getResponse().getContentAsString()).get("certificateId").asText());
@@ -309,7 +309,7 @@ public class AllEndpointsIntegrationTest {
         // Step 4: Public certificate verification
         mockMvc.perform(get("/api/certificates/" + createdCertificateId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.certificateHash").value("sha256:abc123mockcertificatedigest456"));
+                .andExpect(jsonPath("$.certificateHash").isNotEmpty());
     }
 
     @Test

@@ -2,6 +2,7 @@ package com.pharma.reversechain.controller;
 
 import com.pharma.reversechain.blockchain.FabricGatewayConfig;
 import com.pharma.reversechain.repository.CertificateRepository;
+import com.pharma.reversechain.service.AlertService;
 import com.pharma.reversechain.service.BlockchainService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,11 +28,14 @@ class BlockchainControllerTest {
     @Mock
     private CertificateRepository certificateRepository;
 
+    @Mock
+    private AlertService alertService;
+
     private BlockchainController controller;
 
     @BeforeEach
     void setUp() {
-        controller = new BlockchainController(blockchainService, gatewayConfig, certificateRepository);
+        controller = new BlockchainController(blockchainService, gatewayConfig, certificateRepository, alertService);
     }
 
     @Test

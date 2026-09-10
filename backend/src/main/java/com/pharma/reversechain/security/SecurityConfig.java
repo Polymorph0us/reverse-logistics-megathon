@@ -60,6 +60,8 @@ public class SecurityConfig {
                     .requestMatchers("/api/certificates/**", "/api/destruction/certificates/**").permitAll()
                     .requestMatchers("/api/search", "/api/dashboard/**", "/api/organizations/**", "/api/products/**").permitAll()
                     .requestMatchers("/api/blockchain/**").permitAll()
+                    .requestMatchers("/api/regulator/**").hasRole("CDSCO")
+                    .requestMatchers("/api/fraud/**").hasAnyRole("CDSCO", "MANUFACTURER")
                     .anyRequest().authenticated()
             );
 

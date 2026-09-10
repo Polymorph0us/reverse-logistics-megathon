@@ -11,9 +11,9 @@ spring:
       fail-on-empty-beans: false
 
   datasource:
-    url: jdbc:postgresql://localhost:5433/reversechaindb
-    username: rc_user
-    password: rc_password
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/reversechaindb}
+    username: ${SPRING_DATASOURCE_USERNAME:rc_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:rc_password}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -29,7 +29,7 @@ spring:
     baseline-on-migrate: true
 
 jwt:
-  secret: 4d284f18166d48259f63abf5bc439d57a9e52e468e82fa08842af58df24b17e4
+  secret: ${JWT_SECRET:4d284f18166d48259f63abf5bc439d57a9e52e468e82fa08842af58df24b17e4}
   expiration: 86400000 # 1 day
 
 fraud:

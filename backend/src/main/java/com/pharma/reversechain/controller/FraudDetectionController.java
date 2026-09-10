@@ -1,5 +1,6 @@
 package com.pharma.reversechain.controller;
 
+import com.pharma.reversechain.dto.FraudAlertResponse;
 import com.pharma.reversechain.entity.AlertSeverity;
 import com.pharma.reversechain.entity.AlertStatus;
 import com.pharma.reversechain.entity.FraudAlert;
@@ -19,24 +20,27 @@ public class FraudDetectionController {
     private final FraudAlertRepository fraudAlertRepository;
 
     @GetMapping("/alerts")
-    public ResponseEntity<List<FraudAlert>> getAllAlerts(
+    public ResponseEntity<List<FraudAlertResponse>> getAllAlerts(
             @RequestParam(required = false) AlertSeverity severity,
             @RequestParam(required = false) AlertStatus status,
             @RequestParam(required = false) UUID batchId) {
             
+        List<FraudAlert> alerts;
         if (batchId != null) {
-            return ResponseEntity.ok(fraudAlertRepository.findByBatchId(batchId));
+            alerts = fraudAlertRepository.findByBatchId(batchId);
         } else if (severity != null) {
-            return ResponseEntity.ok(fraudAlertRepository.findBySeverity(severity));
+            alerts = fraudAlertRepository.findBySeverity(severity);
         } else if (status != null) {
-            return ResponseEntity.ok(fraudAlertRepository.findByStatus(status));
+            alerts = fraudAlertRepository.findByStatus(status);
+        } else {
+            alerts = fraudAlertRepository.findAll();
         }
         
-        return ResponseEntity.ok(fraudAlertRepository.findAll());
+        return ResponseEntity.ok(alerts.stream().map(this::toFraudAlertResponse).toList());
     }
 
     @PatchMapping("/alerts/{alertId}/status")
-    public ResponseEntity<FraudAlert> updateAlertStatus(
+    public ResponseEntity<FraudAlertResponse> updateAlertStatus(
             @PathVariable UUID alertId,
             @RequestParam AlertStatus status) {
             
@@ -45,6 +49,21 @@ public class FraudDetectionController {
                 
         alert.setStatus(status);
         
-        return ResponseEntity.ok(fraudAlertRepository.save(alert));
+        return ResponseEntity.ok(toFraudAlertResponse(fraudAlertRepository.save(alert)));
+    }
+
+    private FraudAlertResponse toFraudAlertResponse(FraudAlert alert) {
+        FraudAlertResponse response = new FraudAlertResponse();
+        response.setAlertId(alert.getAlertId());
+        response.setType(alert.getType());
+        response.setSeverity(alert.getSeverity());
+        response.setStatus(alert.getStatus());
+        response.setBatchId(alert.getBatchId());
+        response.setBatchNumber(alert.getBatchNumber());
+        response.setDetectedAt(alert.getDetectedAt());
+        response.setLocation(alert.getLocation());
+        response.setOrganizationId(alert.getOrganizationId());
+        response.setMessage(alert.getMessage());
+        return response;
     }
 }

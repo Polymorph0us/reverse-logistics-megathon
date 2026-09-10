@@ -15,12 +15,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.pharma.reversechain.repository.BatchRepository;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class FabricEventListener {
 
     private final FabricGatewayConfig gatewayConfig;
+    private final BatchRepository batchRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private volatile boolean running = true;
@@ -72,6 +75,27 @@ public class FabricEventListener {
 
         log.info(">>> [FABRIC EVENT RECEIVED] Name: '{}', Block: {}, TxId: {}, Payload: {}",
                 eventName, blockNumber, txId, payload);
+                
+        try {
+            com.fasterxml.jackson.databind.JsonNode node = objectMapper.readTree(payload);
+            if (node.has("batchId")) {
+                String batchIdStr = node.get("batchId").asText();
+                try {
+                    java.util.UUID batchId = java.util.UUID.fromString(batchIdStr);
+                    // Check if we have this batch in our local DB
+                    if (!batchRepository.existsById(batchId)) {
+                        log.error("RECONCILIATION MISMATCH: Ledger event for batchId {} but not found in local DB!", batchIdStr);
+                        // In a real system, we would trigger a full state sync here
+                    } else {
+                        log.debug("Reconciliation successful: batch {} exists locally.", batchIdStr);
+                    }
+                } catch (Exception e) {
+                    log.warn("Could not parse batchId or access repository during reconciliation: {}", e.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to parse Fabric event payload for reconciliation", e);
+        }
     }
 
     @PreDestroy
