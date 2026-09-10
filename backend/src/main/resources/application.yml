@@ -1,24 +1,14 @@
+server:
+  port: ${PORT:8081}
+
 spring:
   application:
     name: reversechain
-
-  datasource:
-    url: jdbc:postgresql://localhost:5432/reversechaindb
-    username: rc_user
-    password: rc_password
-    driver-class-name: org.postgresql.Driver
-
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
-
-  flyway:
-    enabled: true
-    baseline-on-migrate: true
+  profiles:
+    default: local
+  jackson:
+    serialization:
+      fail-on-empty-beans: false
 
 jwt:
   secret: 4d284f18166d48259f63abf5bc439d57a9e52e468e82fa08842af58df24b17e4

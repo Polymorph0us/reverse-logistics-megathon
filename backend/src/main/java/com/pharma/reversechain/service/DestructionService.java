@@ -28,8 +28,8 @@ public class DestructionService {
         Batch batch = batchRepository.findById(request.getBatchId())
                 .orElseThrow(() -> new IllegalArgumentException("Batch not found"));
 
-        if (!batch.getCurrentStatus().equals(BatchStatus.WITH_MANUFACTURER)) {
-            throw new IllegalStateException("Only batches currently WITH_MANUFACTURER can be scheduled for destruction.");
+        if (!batch.getCurrentStatus().equals(BatchStatus.WITH_MANUFACTURER) && !batch.getCurrentStatus().equals(BatchStatus.EXPIRED)) {
+            throw new IllegalStateException("Only batches currently WITH_MANUFACTURER or EXPIRED can be scheduled for destruction.");
         }
 
         if (batch.getCurrentQuantity() < request.getQuantity()) {

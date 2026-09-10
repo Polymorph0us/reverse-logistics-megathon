@@ -10,6 +10,9 @@ spring:
       ddl-auto: create-drop
   flyway:
     enabled: false
+  jackson:
+    serialization:
+      fail-on-empty-beans: false
 jwt:
   secret: 4d284f18166d48259f63abf5bc439d57a9e52e468e82fa08842af58df24b17e4
   expiration: 86400000

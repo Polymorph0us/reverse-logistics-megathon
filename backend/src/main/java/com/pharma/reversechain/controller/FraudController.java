@@ -10,13 +10,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/fraud")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 public class FraudController {
 
     private final FraudAlertRepository fraudAlertRepository;
 
-    @GetMapping("/alerts")
+    @GetMapping({"/alerts", "/fraud/alerts"})
     public Page<FraudAlert> getAlerts(Pageable pageable) {
         return fraudAlertRepository.findAll(pageable);
     }

@@ -1,5 +1,7 @@
 package com.pharma.reversechain.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,6 +13,7 @@ import java.util.UUID;
 @Table(name = "certificates")
 @Data
 @NoArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Certificate {
 
     @Id
@@ -25,6 +28,7 @@ public class Certificate {
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "destruction_id", insertable = false, updatable = false)
+    @JsonIgnore
     private DestructionRecord destructionRecord;
 
     @Column(name = "quantity_destroyed", nullable = false)

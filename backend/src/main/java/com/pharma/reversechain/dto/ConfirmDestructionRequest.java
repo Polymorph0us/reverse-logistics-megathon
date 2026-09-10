@@ -18,4 +18,6 @@ public class ConfirmDestructionRequest {
 
     @NotBlank
     private String certificateHash;
+
+    private String method;
 }

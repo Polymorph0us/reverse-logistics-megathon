@@ -1,5 +1,7 @@
 package com.pharma.reversechain.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,6 +13,7 @@ import java.util.UUID;
 @Table(name = "fraud_alerts")
 @Data
 @NoArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class FraudAlert {
 
     @Id
@@ -40,6 +43,7 @@ public class FraudAlert {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organization_id", insertable = false, updatable = false)
+    @JsonIgnore
     private Organization organization;
 
     @Column(nullable = false, length = 1000)

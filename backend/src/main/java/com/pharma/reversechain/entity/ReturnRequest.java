@@ -1,5 +1,7 @@
 package com.pharma.reversechain.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,6 +13,7 @@ import java.util.UUID;
 @Table(name = "return_requests")
 @Data
 @NoArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class ReturnRequest {
 
     @Id
@@ -22,6 +25,7 @@ public class ReturnRequest {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "batch_id", insertable = false, updatable = false)
+    @JsonIgnore
     private Batch batch;
 
     @Column(name = "requested_quantity", nullable = false)
@@ -44,6 +48,7 @@ public class ReturnRequest {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "initiated_by", insertable = false, updatable = false)
+    @JsonIgnore
     private Organization initiator;
 
     @Column(name = "created_at", nullable = false)

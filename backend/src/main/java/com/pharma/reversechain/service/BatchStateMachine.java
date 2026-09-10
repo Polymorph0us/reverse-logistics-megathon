@@ -27,7 +27,7 @@ public class BatchStateMachine {
     static {
         ALLOWED_TRANSITIONS.put(BatchStatus.ACTIVE, EnumSet.of(BatchStatus.EXPIRING_SOON, BatchStatus.EXPIRED, BatchStatus.RETURN_INITIATED));
         ALLOWED_TRANSITIONS.put(BatchStatus.EXPIRING_SOON, EnumSet.of(BatchStatus.EXPIRED, BatchStatus.RETURN_INITIATED));
-        ALLOWED_TRANSITIONS.put(BatchStatus.EXPIRED, EnumSet.of(BatchStatus.RETURN_INITIATED));
+        ALLOWED_TRANSITIONS.put(BatchStatus.EXPIRED, EnumSet.of(BatchStatus.RETURN_INITIATED, BatchStatus.SCHEDULED_FOR_DESTRUCTION));
         ALLOWED_TRANSITIONS.put(BatchStatus.RETURN_INITIATED, EnumSet.of(BatchStatus.WITH_DISTRIBUTOR, BatchStatus.DISPUTED));
         ALLOWED_TRANSITIONS.put(BatchStatus.WITH_DISTRIBUTOR, EnumSet.of(BatchStatus.WITH_MANUFACTURER, BatchStatus.DISPUTED));
         ALLOWED_TRANSITIONS.put(BatchStatus.WITH_MANUFACTURER, EnumSet.of(BatchStatus.SCHEDULED_FOR_DESTRUCTION));

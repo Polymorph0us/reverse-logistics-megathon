@@ -12,4 +12,6 @@ import java.util.UUID;
 public interface InvalidRegistryRepository extends JpaRepository<InvalidRegistry, UUID> {
     List<InvalidRegistry> findByManufacturerIdAndBatchNumberAndManufacturingDateAndExpiryDate(
             UUID manufacturerId, String batchNumber, LocalDate manufacturingDate, LocalDate expiryDate);
+
+    boolean existsByBatchNumber(String batchNumber);
 }
