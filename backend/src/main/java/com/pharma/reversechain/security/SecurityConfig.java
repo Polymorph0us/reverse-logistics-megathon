@@ -60,8 +60,8 @@ public class SecurityConfig {
                     .requestMatchers("/api/certificates/**", "/api/destruction/certificates/**").permitAll()
                     .requestMatchers("/api/search", "/api/dashboard/**", "/api/organizations/**", "/api/products/**").permitAll()
                     .requestMatchers("/api/blockchain/**").permitAll()
-                    .requestMatchers("/api/regulator/**").hasRole("REGULATOR")
-                    .requestMatchers("/api/fraud/**").hasAnyRole("REGULATOR", "MANUFACTURER")
+                    .requestMatchers("/api/regulator/**").hasAnyRole("REGULATOR", "ADMIN")
+                    .requestMatchers("/api/fraud/**").hasAnyRole("REGULATOR", "MANUFACTURER", "ADMIN")
                     .anyRequest().authenticated()
             );
 

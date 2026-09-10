@@ -132,6 +132,12 @@
 			<version>2.6.0</version>
 		</dependency>
 
+		<!-- Hyperledger Fabric Gateway for Java -->
+		<dependency>
+			<groupId>org.hyperledger.fabric</groupId>
+			<artifactId>fabric-gateway</artifactId>
+			<version>1.5.1</version>
+		</dependency>
 
 	</dependencies>
 

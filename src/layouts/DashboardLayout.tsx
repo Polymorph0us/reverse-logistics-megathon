@@ -1,7 +1,7 @@
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom"
 import { useAuthStore } from "@/store/useAuthStore"
 import { useSharedStore } from "@/store/useSharedStore"
-import { LayoutDashboard, Package, AlertTriangle, FileText, LogOut, Activity, ShieldAlert, Bell } from "lucide-react"
+import { LayoutDashboard, Package, AlertTriangle, FileText, LogOut, Activity, ShieldAlert, ShieldCheck, Bell, GitBranch, ScanLine, Truck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
@@ -26,15 +26,19 @@ export function DashboardLayout() {
         return [
           { label: "Dashboard", href: "/distributor/dashboard", icon: LayoutDashboard },
           { label: "Pending Returns", href: "/distributor/returns", icon: Package },
+          { label: "Crate Consolidation", href: "/distributor/consolidation", icon: GitBranch },
         ]
       case "MANUFACTURER":
         return [
-          { label: "Dashboard", href: "/manufacturer/dashboard", icon: LayoutDashboard },
-          { label: "Destructions", href: "/manufacturer/schedule-destruction", icon: FileText },
+          { label: "Dashboard",           href: "/manufacturer/dashboard",        icon: LayoutDashboard },
+          { label: "OEM Intake & Denaturing",href: "/manufacturer/intake",         icon: ScanLine },
+          { label: "CBWTF Pickup Scheduler",href: "/manufacturer/cbwtf-scheduler", icon: Truck },
+          { label: "Schedule Destruction", href: "/manufacturer/schedule-destruction", icon: FileText },
         ]
       case "WASTE_FACILITY":
         return [
-          { label: "Dashboard", href: "/facility/dashboard", icon: LayoutDashboard },
+          { label: "Dashboard",    href: "/facility/dashboard",     icon: LayoutDashboard },
+          { label: "Certificates", href: "/facility/certificate",   icon: ShieldCheck },
         ]
       case "REGULATOR":
       case "ADMIN":

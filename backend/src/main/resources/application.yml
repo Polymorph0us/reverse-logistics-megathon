@@ -44,9 +44,9 @@ dwell-time:
   critical-threshold-days: 14
 
 fabric:
-  enabled: false
+  enabled: false # Switched to clean in-database Key-Value SHA-256 Hash Store
 blockchain:
-  mode: local
+  mode: hash-store # hash-store (default), fabric, or local
   channel-name: pharma-channel
   chaincode-name: pharma-contract
   peer-endpoint: localhost:7051

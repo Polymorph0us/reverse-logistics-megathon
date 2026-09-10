@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { BatchPassport, FraudAlert, Notification, ReturnRequest, DestructionCertificate, TimelineEvent } from '@/api/types';
+import type { BatchPassport, FraudAlert, Notification, ReturnRequest, DestructionCertificate, TimelineEvent, MasterConsignment, DenaturedBatchTag, ElectronicWasteTransferNote, IncinerationLog, FinalIncinerationRecord } from '@/api/types';
 import { SEED_BATCHES, SEED_ALERTS, SEED_RETURNS, SEED_DESTRUCTIONS } from './seedData';
 
 interface SharedState {
@@ -9,6 +9,11 @@ interface SharedState {
   notifications: Notification[];
   returns: ReturnRequest[];
   destructions: DestructionCertificate[];
+  masterConsignments: MasterConsignment[];  // Layer 3
+  denaturedTags: DenaturedBatchTag[];       // Layer 4
+  ewtns: ElectronicWasteTransferNote[];     // Layer 4
+  incinerationLogs: IncinerationLog[];      // Layer 4
+  finalIncinerationRecords: FinalIncinerationRecord[]; // Layer 5
   
   // Actions
   addBatch: (batch: BatchPassport) => void;
@@ -24,6 +29,18 @@ interface SharedState {
   
   addDestruction: (cert: DestructionCertificate) => void;
   
+  // Layer 3 actions
+  addMasterConsignment: (mcm: MasterConsignment) => void;
+  updateMasterConsignment: (mcmId: string, updates: Partial<MasterConsignment>) => void;
+
+  // Layer 4 actions
+  addDenaturedTag: (tag: DenaturedBatchTag) => void;
+  addEWTN: (ewtn: ElectronicWasteTransferNote) => void;
+  updateEWTN: (ewtnId: string, updates: Partial<ElectronicWasteTransferNote>) => void;
+  addIncinerationLog: (log: IncinerationLog) => void;
+  // Layer 5 actions
+  addFinalIncinerationRecord: (rec: FinalIncinerationRecord) => void;
+  
   seedIfEmpty: () => void;
 }
 
@@ -35,6 +52,11 @@ export const useSharedStore = create<SharedState>()(
       notifications: [],
       returns: [],
       destructions: [],
+      masterConsignments: [],
+      denaturedTags: [],
+      ewtns: [],
+      incinerationLogs: [],
+      finalIncinerationRecords: [],
       
       addBatch: (batch) => set((state) => ({ batches: [...state.batches, batch] })),
       updateBatch: (batchId, updates) => set((state) => ({
@@ -56,6 +78,22 @@ export const useSharedStore = create<SharedState>()(
       })),
       
       addDestruction: (cert) => set((state) => ({ destructions: [cert, ...state.destructions] })),
+
+      // Layer 3
+      addMasterConsignment: (mcm) => set((state) => ({ masterConsignments: [mcm, ...state.masterConsignments] })),
+      updateMasterConsignment: (mcmId, updates) => set((state) => ({
+        masterConsignments: state.masterConsignments.map(m => m.mcmId === mcmId ? { ...m, ...updates } : m)
+      })),
+
+      // Layer 4
+      addDenaturedTag: (tag) => set((state) => ({ denaturedTags: [tag, ...state.denaturedTags] })),
+      addEWTN: (ewtn) => set((state) => ({ ewtns: [ewtn, ...state.ewtns] })),
+      updateEWTN: (ewtnId, updates) => set((state) => ({
+        ewtns: state.ewtns.map(e => e.ewtnId === ewtnId ? { ...e, ...updates } : e)
+      })),
+      addIncinerationLog: (log) => set((state) => ({ incinerationLogs: [log, ...state.incinerationLogs] })),
+      // Layer 5
+      addFinalIncinerationRecord: (rec) => set((state) => ({ finalIncinerationRecords: [rec, ...state.finalIncinerationRecords] })),
       
       seedIfEmpty: () => {
         const state = get();
