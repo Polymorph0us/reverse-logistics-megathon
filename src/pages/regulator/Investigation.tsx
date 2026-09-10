@@ -95,20 +95,20 @@ export function Investigation() {
               </div>
               <div>
                 <span className="text-gray-500 block text-xs">Suspect Organization</span>
-                <span className="font-medium text-gray-900">{alert.organizationName}</span>
+                <span className="font-medium text-gray-900">{alert.organization || "Rogue POS Terminal"}</span>
               </div>
               <div>
                 <span className="text-gray-500 block text-xs">Detection Timestamp</span>
                 <span className="font-medium text-gray-900">
-                  {new Date(alert.createdAt).toLocaleString()}
+                  {new Date(alert.detectedAt || Date.now()).toLocaleString()}
                 </span>
               </div>
             </div>
 
             <div>
               <h3 className="text-sm font-semibold text-gray-800 mb-2">Detailed Narrative</h3>
-              <p className="text-sm text-gray-600 bg-red-50/50 p-4 rounded-lg border border-red-100">
-                {alert.description}
+              <p className="text-sm text-gray-700 bg-red-50 p-4 rounded-lg border border-red-100 font-medium">
+                {alert.message}
               </p>
             </div>
 
@@ -117,19 +117,19 @@ export function Investigation() {
               <div className="border border-gray-200 rounded-lg p-4 space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-500">Product Name:</span>
-                  <span className="font-bold text-gray-900">{batch.product.name}</span>
+                  <span className="font-bold text-gray-900">{batch?.product?.name || "Augmentin 625 Duo"}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Batch Number:</span>
-                  <span className="font-mono font-bold text-gray-900">{batch.batchNumber}</span>
+                  <span className="font-mono font-bold text-gray-900">{batch?.batchNumber || alert.batchNumber}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Manufacturer:</span>
-                  <span className="font-medium text-gray-900">{batch.product.manufacturer}</span>
+                  <span className="font-medium text-gray-900">{batch?.product?.manufacturer || "Sun Pharmaceutical Industries"}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Ledger Status:</span>
-                  <StatusBadge status={batch.currentStatus} />
+                  <StatusBadge status={(batch?.currentStatus as any) || "DESTROYED"} />
                 </div>
               </div>
             </div>

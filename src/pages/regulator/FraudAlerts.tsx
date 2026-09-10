@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom"
 import { useSharedStore } from "@/store/useSharedStore"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -8,6 +9,7 @@ import { formatDistanceToNow } from "date-fns"
 
 export function FraudAlerts() {
   const alerts = useSharedStore(state => state.fraudAlerts)
+  const navigate = useNavigate()
 
   return (
     <div className="space-y-6">
@@ -85,7 +87,12 @@ export function FraudAlerts() {
                     {formatDistanceToNow(new Date(alert.detectedAt), { addSuffix: true })}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="border-red-200 text-red-700 hover:bg-red-50 hover:border-red-300"
+                      onClick={() => navigate(`/regulator/investigation/${alert.alertId}`)}
+                    >
                       Investigate <ArrowRight className="w-4 h-4 ml-2" />
                     </Button>
                   </TableCell>
