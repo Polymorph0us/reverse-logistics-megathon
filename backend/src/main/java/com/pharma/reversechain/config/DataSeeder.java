@@ -25,6 +25,8 @@ public class DataSeeder implements CommandLineRunner {
     private final BatchRepository batchRepository;
     private final InvalidRegistryRepository invalidRegistryRepository;
     private final BatchEventRepository batchEventRepository;
+    private final MedicinePassportRepository passportRepository;
+    private final MovementEventRepository movementRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -70,7 +72,8 @@ public class DataSeeder implements CommandLineRunner {
         User u3 = createUser("Charlie Retailer", "charlie@citypharmacy.com", encodedPassword, Role.RETAILER, ret1.getId());
         User u4 = createUser("Dave Waste", "dave@ecowaste.com", encodedPassword, Role.WASTE_FACILITY, wst.getId());
         User u5 = createUser("Eve Regulator", "eve@cdsco.gov.in", encodedPassword, Role.REGULATOR, reg.getId());
-        userRepository.saveAllAndFlush(List.of(u1, u2, u3, u4, u5));
+        User u6 = createUser("Mike MedRep", "mike@pharmacorp.com", encodedPassword, Role.MEDICAL_REP, mfr1.getId());
+        userRepository.saveAllAndFlush(List.of(u1, u2, u3, u4, u5, u6));
 
         // 3. Products
         Product p1 = createProduct("Paracetamol 500mg", "Paracetamol", "Crocin", mfr1.getId(), "Tablet", "500mg", "STRIP");
@@ -132,6 +135,25 @@ public class DataSeeder implements CommandLineRunner {
         ev1.setTimestamp(LocalDateTime.now().minusDays(30));
 
         batchEventRepository.saveAndFlush(ev1);
+
+        // 7. Tracking Record (Medicine Passport)
+        MedicinePassport passport1 = new MedicinePassport();
+        passport1.setTrackingId("RP-IND-P12345");
+        passport1.setBatchId(b1.getBatchId());
+        passport1.setProductId(p1.getProductId());
+        passport1.setBatchNumber("P12345");
+        passport1.setManufacturerId(mfr1.getId());
+        passport1.setManufacturingDate(LocalDate.of(2023, 1, 1));
+        passport1.setExpiryDate(LocalDate.now().plusDays(12));
+        passport1.setCurrentHolderId(ret1.getId());
+        passport1.setCurrentLocation("Pune");
+        passport1.setCurrentQuantity(420);
+        passport1.setOriginalQuantity(500);
+        passport1.setStatus("EXPIRING_SOON");
+        passport1.setRiskLevel("HIGH");
+        passport1.setRiskScore(80);
+        passport1.setNextAction("INITIATE_RETURN");
+        passportRepository.save(passport1);
 
         log.info("Initial demo data successfully seeded.");
     }

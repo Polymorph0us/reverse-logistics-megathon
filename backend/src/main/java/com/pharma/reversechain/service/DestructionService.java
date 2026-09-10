@@ -25,17 +25,13 @@ public class DestructionService {
     private final ProductRepository productRepository;
     private final OrganizationRepository organizationRepository;
     private final BatchStateMachine stateMachine;
-    private final BlockchainService blockchainService;
     private final InvalidRegistryRepository invalidRegistryRepository;
     private final BatchEventRepository batchEventRepository;
     private final NotificationService notificationService;
     private final CertificatePdfService certificatePdfService;
     private final FileStorageService fileStorageService;
     
-    @Value("${blockchain.mode:local}")
-    private String blockchainMode;
-
-    @Transactional
+        @Transactional
     public DestructionRecord scheduleDestruction(com.pharma.reversechain.dto.ScheduleDestructionRequest request, User actor) {
         Batch batch = batchRepository.findById(request.getBatchId())
                 .orElseThrow(() -> new IllegalArgumentException("Batch not found"));
@@ -64,22 +60,6 @@ public class DestructionService {
 
         log.info("Scheduled destruction {} for batch {} with quantity {}", 
                 savedRecord.getDestructionId(), batch.getBatchId(), request.getQuantity());
-
-        // Record SENT_FOR_DISPOSAL on Blockchain
-        try {
-            blockchainService.recordDisposalScheduled(
-                    batch.getBatchId().toString(),
-                    savedRecord.getDestructionId().toString(),
-                    request.getQuantity(),
-                    request.getWasteFacilityId() != null ? request.getWasteFacilityId().toString() : "WasteFacilityOrg",
-                    request.getScheduledDate() != null ? request.getScheduledDate().toString() : LocalDateTime.now().toString()
-            );
-        } catch (Exception e) {
-            log.error("Blockchain disposal scheduling failed for destruction {}: {}", savedRecord.getDestructionId(), e.getMessage());
-            if ("fabric".equalsIgnoreCase(blockchainMode)) {
-                throw new IllegalStateException("Blockchain transaction required but failed: " + e.getMessage(), e);
-            }
-        }
 
         return savedRecord;
     }
@@ -174,28 +154,7 @@ public class DestructionService {
             throw new IllegalStateException("Certificate PDF generation failed: " + e.getMessage(), e);
         }
 
-        // Submit destruction proof to blockchain
-        String txId;
-        try {
-            var result = blockchainService.recordDestruction(
-                    batch.getBatchId().toString(),
-                    record.getDestructionId().toString(),
-                    request.getQuantityDestroyed(),
-                    request.getDestructionDate().toString(),
-                    certificateId.toString(),
-                    certificateHash
-            );
-            txId = result.transactionId();
-            log.info("Blockchain destruction recorded with txId: {}", txId);
-            
-        } catch (Exception e) {
-            log.error("Blockchain destruction recording failed: {}", e.getMessage(), e);
-            if ("fabric".equalsIgnoreCase(blockchainMode)) {
-                throw new IllegalStateException("Blockchain transaction required but failed. Cannot mark destruction as complete: " + e.getMessage(), e);
-            }
-            txId = "local-fallback-" + UUID.randomUUID();
-        }
-
+        String txId = "local-fallback-" + UUID.randomUUID();
         // Update destruction record
         record.setStatus(DestructionStatus.DESTROYED);
         destructionRecordRepository.save(record);

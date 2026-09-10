@@ -10,7 +10,6 @@ import com.pharma.reversechain.repository.BatchRepository;
 import com.pharma.reversechain.repository.FraudAlertRepository;
 import com.pharma.reversechain.repository.OrganizationRepository;
 import com.pharma.reversechain.repository.ReturnRequestRepository;
-import com.pharma.reversechain.service.BlockchainService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -35,7 +34,6 @@ public class RegulatorController {
     private final OrganizationRepository organizationRepository;
     private final BatchRepository batchRepository;
     private final ReturnRequestRepository returnRequestRepository;
-    private final BlockchainService blockchainService;
 
     @GetMapping("/dashboard")
     public ResponseEntity<Map<String, Object>> getDashboard() {
@@ -78,12 +76,7 @@ public class RegulatorController {
                     InvestigationResponse response = new InvestigationResponse();
                     response.setAlert(mapToFraudAlertResponse(alert));
                     if (alert.getBatchId() != null) {
-                        try {
-                            String history = blockchainService.getBatchHistory(alert.getBatchId().toString());
-                            response.setBlockchainProof(history);
-                        } catch (Exception e) {
-                            response.setBlockchainProof("Error retrieving blockchain proof");
-                        }
+                        response.setBlockchainProof("Not applicable (Blockchain Deprecated)");
                     } else {
                         response.setBlockchainProof("No associated batch");
                     }

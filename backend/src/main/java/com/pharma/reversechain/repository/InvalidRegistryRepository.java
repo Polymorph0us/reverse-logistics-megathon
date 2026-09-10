@@ -13,5 +13,7 @@ public interface InvalidRegistryRepository extends JpaRepository<InvalidRegistry
     List<InvalidRegistry> findByManufacturerIdAndBatchNumberAndManufacturingDateAndExpiryDate(
             UUID manufacturerId, String batchNumber, LocalDate manufacturingDate, LocalDate expiryDate);
 
+    List<InvalidRegistry> findByBatchNumber(String batchNumber);
+
     boolean existsByBatchNumber(String batchNumber);
 }

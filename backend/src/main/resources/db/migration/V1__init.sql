@@ -102,10 +102,20 @@ CREATE TABLE certificates (
     destruction_id UUID NOT NULL REFERENCES destruction_records(destruction_id),
     quantity_destroyed INT NOT NULL,
     destruction_date TIMESTAMP NOT NULL,
+    destruction_method VARCHAR(255),
     facility_id UUID NOT NULL REFERENCES organizations(id),
+    facility_license VARCHAR(255),
     certificate_hash VARCHAR(255) NOT NULL,
-    blockchain_tx_id VARCHAR(255) NOT NULL,
+    blockchain_tx_id VARCHAR(255), -- Made optional since blockchain is removed
+    file_storage_reference VARCHAR(500),
     status VARCHAR(50) NOT NULL,
+    issued_at TIMESTAMP,
+    issuer_id UUID REFERENCES users(id),
+    product_id UUID REFERENCES products(product_id),
+    batch_number VARCHAR(255),
+    manufacturer_id UUID REFERENCES organizations(id),
+    manufacturing_date DATE,
+    expiry_date DATE,
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
@@ -124,11 +134,20 @@ CREATE TABLE fraud_alerts (
     severity VARCHAR(50) NOT NULL,
     batch_id UUID REFERENCES batches(batch_id),
     batch_number VARCHAR(255) NOT NULL,
+    tracking_id VARCHAR(50),
     detected_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    last_detected_at TIMESTAMP NOT NULL DEFAULT NOW(),
     location VARCHAR(255),
     organization_id UUID REFERENCES organizations(id),
     message TEXT NOT NULL,
-    resolved BOOLEAN DEFAULT FALSE
+    risk_score INT,
+    risk_reasons TEXT,
+    source_event_id UUID,
+    occurrence_count INT DEFAULT 1,
+    status VARCHAR(50) DEFAULT 'OPEN',
+    resolved_by UUID REFERENCES users(id),
+    resolved_at TIMESTAMP,
+    resolution_note TEXT
 );
 
 CREATE TABLE notifications (
@@ -152,4 +171,49 @@ CREATE TABLE invalid_registry (
     invalidated_quantity INT NOT NULL,
     reason TEXT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE tracking_records (
+    tracking_id VARCHAR(50) PRIMARY KEY,
+    batch_id UUID NOT NULL REFERENCES batches(batch_id),
+    product_id UUID NOT NULL REFERENCES products(product_id),
+    batch_number VARCHAR(255) NOT NULL,
+    manufacturer_id UUID NOT NULL REFERENCES organizations(id),
+    manufacturing_date DATE NOT NULL,
+    expiry_date DATE NOT NULL,
+    current_holder UUID REFERENCES organizations(id),
+    current_location VARCHAR(255),
+    current_quantity INT NOT NULL,
+    original_quantity INT NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    risk_level VARCHAR(50) DEFAULT 'LOW',
+    risk_score INT DEFAULT 0,
+    next_action VARCHAR(100),
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE movement_events (
+    movement_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tracking_id VARCHAR(50) NOT NULL REFERENCES tracking_records(tracking_id),
+    from_organization UUID REFERENCES organizations(id),
+    to_organization UUID REFERENCES organizations(id),
+    quantity_sent INT,
+    quantity_received INT,
+    difference INT,
+    location VARCHAR(255),
+    actor VARCHAR(255),
+    event_type VARCHAR(100) NOT NULL,
+    notes TEXT,
+    timestamp TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE waste_facility_authorizations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    facility_id UUID NOT NULL REFERENCES organizations(id),
+    spcb_authorization_id VARCHAR(100) NOT NULL,
+    cbwtf_license_number VARCHAR(100) NOT NULL,
+    authorizing_authority VARCHAR(255) NOT NULL,
+    authorization_valid_from DATE NOT NULL,
+    authorization_valid_to DATE NOT NULL
 );

@@ -3,7 +3,6 @@ package com.pharma.reversechain.service;
 import com.pharma.reversechain.entity.*;
 import com.pharma.reversechain.repository.BatchRepository;
 import com.pharma.reversechain.repository.ReturnRequestRepository;
-import com.pharma.reversechain.service.BlockchainService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,7 +19,6 @@ public class ReturnService {
     private final BatchRepository batchRepository;
     private final BatchStateMachine stateMachine;
     private final FraudDetectionService fraudDetectionService;
-    private final BlockchainService blockchainService;
 
     @Transactional
     public ReturnRequest initiateReturn(UUID batchId, Integer quantity, String reason, String condition, String evidence, User actor) {
@@ -48,19 +46,6 @@ public class ReturnService {
         request.setStatus(ReturnStatus.INITIATED);
 
         ReturnRequest savedRequest = returnRequestRepository.save(request);
-
-        // Record RETURN_INITIATED on Blockchain
-        try {
-            blockchainService.recordReturn(
-                    batch.getBatchId().toString(),
-                    savedRequest.getReturnId().toString(),
-                    quantity,
-                    reason,
-                    condition
-            );
-        } catch (Exception e) {
-            log.warn("Blockchain audit record for initiateReturn encountered exception: {}", e.getMessage());
-        }
 
         return savedRequest;
     }
@@ -104,19 +89,6 @@ public class ReturnService {
         if (evidence != null) request.setEvidence(evidence);
 
         ReturnRequest savedRequest = returnRequestRepository.save(request);
-
-        // Record RETURN_RECEIVED on Blockchain
-        try {
-            blockchainService.recordDistributorReceipt(
-                    batch.getBatchId().toString(),
-                    savedRequest.getReturnId().toString(),
-                    receivedQuantity,
-                    diff,
-                    condition
-            );
-        } catch (Exception e) {
-            log.warn("Blockchain audit record for receiveReturn encountered exception: {}", e.getMessage());
-        }
 
         return savedRequest;
     }
@@ -165,18 +137,6 @@ public class ReturnService {
         if (evidence != null) request.setEvidence(evidence);
 
         ReturnRequest savedRequest = returnRequestRepository.save(request);
-
-        // Record MANUFACTURER_RECEIVED on Blockchain
-        try {
-            blockchainService.recordManufacturerReceipt(
-                    batch.getBatchId().toString(),
-                    savedRequest.getReturnId().toString(),
-                    receivedQuantity,
-                    condition
-            );
-        } catch (Exception e) {
-            log.warn("Blockchain audit record for manufacturerReceive encountered exception: {}", e.getMessage());
-        }
 
         return savedRequest;
     }
