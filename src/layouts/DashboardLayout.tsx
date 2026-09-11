@@ -90,8 +90,8 @@ export function DashboardLayout() {
     <div className="flex h-screen bg-gray-50">
       <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
         <div className="h-16 flex items-center px-6 border-b border-gray-200">
-          <Activity className="w-6 h-6 text-emerald-600 mr-2" />
-          <span className="font-bold text-lg text-gray-900">RxTrack</span>
+          <img src="/src/assets/logo.png" alt="DrugLines Logo" className="w-12 h-12 mr-3 object-contain drop-shadow-sm" />
+          <span className="font-bold tracking-tight text-xl text-brand-text">DrugLines</span>
         </div>
         
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
@@ -109,13 +109,13 @@ export function DashboardLayout() {
               <Link
                 key={item.href}
                 to={item.href}
-                className={`flex items-center px-2 py-2 text-sm font-medium rounded-md ${
+                className={`flex items-center px-3 py-2 text-sm font-medium rounded-xl transition-all duration-200 ${
                   isActive 
-                    ? "bg-emerald-50 text-emerald-700" 
-                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    ? "bg-brand-primary/10 text-brand-primary shadow-sm" 
+                    : "text-brand-muted hover:bg-gray-100/50 hover:text-brand-text"
                 }`}
               >
-                <Icon className={`mr-3 h-5 w-5 ${isActive ? "text-emerald-500" : "text-gray-400"}`} />
+                <Icon className={`mr-3 h-[18px] w-[18px] ${isActive ? "text-brand-primary" : "text-gray-400"}`} strokeWidth={isActive ? 2.5 : 2} />
                 {item.label}
               </Link>
             )
@@ -135,7 +135,7 @@ export function DashboardLayout() {
           <div>
             <Link 
               to="/organizations?onboard=true" 
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 rounded-lg transition-colors shadow-sm"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-brand-primary hover:bg-brand-primary/90 active:bg-brand-primary/80 rounded-full transition-colors shadow-sm interactive-card"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>New Organization</span>

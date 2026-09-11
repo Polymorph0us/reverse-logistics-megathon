@@ -262,7 +262,7 @@ function FIRCertificate({ rec }: { rec: FinalIncinerationRecord }) {
         </div>
 
         <div className="mt-6 text-center text-[10px] text-gray-400 border-t pt-4">
-          This record is auto-compiled by the RxTrack Platform · SHA-256 anchored · Publicly verifiable · Cannot be forged or backdated.
+          This record is auto-compiled by the DrugLines Platform · SHA-256 anchored · Publicly verifiable · Cannot be forged or backdated.
         </div>
       </CardContent>
     </Card>

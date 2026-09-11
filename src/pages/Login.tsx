@@ -19,12 +19,12 @@ export function Login() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md shadow-lg border-0">
+      <Card className="w-full max-w-md border-0 glass-panel">
         <CardHeader className="text-center pb-8 pt-8">
-          <div className="mx-auto w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-4">
-            <Shield className="w-8 h-8 text-emerald-600" />
+          <div className="mx-auto flex items-center justify-center mb-6">
+            <img src="/src/assets/logo.png" alt="DrugLines Logo" className="w-[140px] drop-shadow-lg" />
           </div>
-          <CardTitle className="text-3xl font-bold text-gray-900">RxTrack</CardTitle>
+          <CardTitle className="text-3xl font-bold text-gray-900">DrugLines</CardTitle>
           <CardDescription className="text-gray-500 mt-2">
             Closed-Loop Medicine Tracking Platform
           </CardDescription>
@@ -46,7 +46,7 @@ export function Login() {
                 </SelectContent>
               </Select>
             </div>
-            <Button type="submit" className="w-full h-12 text-base font-semibold" disabled={isLoading}>
+            <Button type="submit" className="w-full h-12 text-base font-semibold bg-brand-primary hover:bg-brand-primary/90 interactive-card shadow-md" disabled={isLoading}>
               {isLoading ? "Signing in..." : "Access Dashboard"}
             </Button>
           </form>

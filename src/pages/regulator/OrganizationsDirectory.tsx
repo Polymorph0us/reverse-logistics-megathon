@@ -240,7 +240,7 @@ export function OrganizationsDirectory() {
         registeredDate: new Date().toISOString().split("T")[0],
       });
 
-      setSuccessMsg(`Successfully onboarded "${created.name}" to the National RxTrack Database!`);
+      setSuccessMsg(`Successfully onboarded "${created.name}" to the National DrugLines Database!`);
       setIsOnboardOpen(false);
       // Reset form
       setFormData({

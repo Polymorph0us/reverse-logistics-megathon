@@ -23,6 +23,7 @@ import {
   Lock
 } from "lucide-react"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend, LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts"
+import { motion } from "framer-motion"
 
 export function RetailerDashboard() {
   const navigate = useNavigate()
@@ -112,7 +113,7 @@ export function RetailerDashboard() {
 
       {/* 1. KPI Stats Summary Cards */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="glass-panel interactive-card">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-gray-500">Active Inventory</CardTitle>
             <Package className="w-4 h-4 text-emerald-500" />
@@ -122,7 +123,7 @@ export function RetailerDashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="glass-panel interactive-card">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-gray-500">Expiring Soon</CardTitle>
             <AlertTriangle className="w-4 h-4 text-amber-500 animate-pulse" />
@@ -132,7 +133,7 @@ export function RetailerDashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="glass-panel interactive-card">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-gray-500">Returns Pending</CardTitle>
             <ArrowRightLeft className="w-4 h-4 text-blue-500" />
@@ -142,7 +143,7 @@ export function RetailerDashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="glass-panel interactive-card">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-gray-500">Fraud Alerts</CardTitle>
             <ShieldAlert className="w-4 h-4 text-red-500" />
@@ -154,7 +155,7 @@ export function RetailerDashboard() {
       </div>
 
       {/* 2. Middle Section: Active Consignments & Driver Handoffs */}
-      <Card className="border-emerald-100 shadow-sm overflow-hidden">
+      <Card className="glass-panel overflow-hidden">
         <CardHeader className="bg-gradient-to-r from-emerald-50/70 via-white to-teal-50/50 pb-3 border-b border-emerald-100 flex flex-row items-center justify-between">
           <div>
             <CardTitle className="text-base font-bold text-gray-900 flex items-center gap-2">
@@ -165,7 +166,7 @@ export function RetailerDashboard() {
           <Button
             variant="outline"
             size="sm"
-            className="text-xs border-emerald-300 text-emerald-700 hover:bg-emerald-50 cursor-pointer"
+            className="text-xs border-brand-primary text-brand-primary hover:bg-brand-primary/10 cursor-pointer interactive-card shadow-sm"
             onClick={() => navigate("/retailer/inventory")}
           >
             Stage New Return
@@ -198,7 +199,7 @@ export function RetailerDashboard() {
                     return (
                       <tr key={r.returnId} className="hover:bg-gray-50/50 transition-colors">
                         <td className="py-3 px-4">
-                          <span className="font-mono font-bold text-gray-900 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
+                          <span className="tech-id bg-gray-100/50 px-2 py-0.5 rounded-md border border-gray-200">
                             {r.consignmentCode || r.returnId}
                           </span>
                           <span className="text-[11px] text-gray-400 block mt-0.5">{r.productName}</span>
@@ -298,7 +299,7 @@ export function RetailerDashboard() {
 
       {/* 3. Lower Section: Analytics & Health Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
+        <Card className="glass-panel">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Inventory Health</CardTitle>
             <span className="text-xs text-gray-400 font-medium">{totalStockCount} Batches Tracked</span>
@@ -318,7 +319,15 @@ export function RetailerDashboard() {
                     isAnimationActive={true}
                   >
                     {inventoryData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={entry.color}
+                        className="transition-all duration-300 hover:opacity-90 cursor-pointer"
+                        style={{
+                          transformOrigin: "center",
+                          transformBox: "fill-box"
+                        }}
+                      />
                     ))}
                   </Pie>
                   <RechartsTooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
@@ -329,7 +338,7 @@ export function RetailerDashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="glass-panel">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Returns Initiated (30 Days)</CardTitle>
             <span className="text-xs text-gray-400 font-medium">Reverse Chain Flow</span>

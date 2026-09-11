@@ -76,7 +76,7 @@ export function VerifyBatch() {
       <div className="mb-8 cursor-pointer" onClick={() => navigate(-1)}>
         <h1 className="text-2xl font-bold text-emerald-800 flex items-center">
           <ShieldAlert className="w-6 h-6 mr-2" />
-          RxTrack POS Terminal
+          DrugLines POS Terminal
         </h1>
       </div>
 

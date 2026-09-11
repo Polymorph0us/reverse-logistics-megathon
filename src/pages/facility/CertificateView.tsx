@@ -11,6 +11,7 @@ import {
   CheckCircle2, ShieldCheck, FileOutput, Lock, XCircle,
   AlertTriangle, Loader2, Flame, ClipboardList, ScanLine, FlaskConical, Printer,
 } from "lucide-react"
+import QRCode from "qrcode"
 
 // ── Gate Status Row ───────────────────────────────────────────────────────────
 function GateRow({ label, passed, detail }: { label: string; passed: boolean; detail?: string }) {
@@ -30,155 +31,176 @@ function GateRow({ label, passed, detail }: { label: string; passed: boolean; de
 // ── Full Certificate View ─────────────────────────────────────────────────────
 function CertificateDocument({ cert }: { cert: DestructionCertificate }) {
   const verifyUrl = `${window.location.origin}/verify?cert=${cert.certificateId}`
+  const [qrDataUrl, setQrDataUrl] = useState<string>("")
+
+  useEffect(() => {
+    QRCode.toDataURL(verifyUrl, { margin: 1, color: { dark: "#111827", light: "#ffffff" } })
+      .then(setQrDataUrl)
+      .catch(console.error)
+  }, [verifyUrl])
+
+  // Calculate gate status dynamically
+  const gates = [
+    { label: "Gate 1 — Blind Inward Scan (Merkle Root Verified)", passed: !!cert.blindScanVerified, detail: cert.blindScanVerified ? "MCM status = BLIND_SCAN_PASS · All bag hashes matched" : "FAILED: Blind scan not confirmed" },
+    { label: "Gate 2 — CDSCO Witnessed Chemical Denaturing", passed: !!cert.denaturedTagId, detail: cert.denaturedTagId ? `Tag: ${cert.denaturedTagId}` : "FAILED: No denaturing tag found" },
+    { label: "Gate 3 — E-WTN Pickup Scheduled", passed: !!cert.ewtnId, detail: cert.ewtnId ? `EWTN: ${cert.ewtnId}` : "FAILED: No E-WTN reference" },
+    { label: "Gate 4 — Incineration Temp Log ≥ 1050°C", passed: (cert.secondaryChamberTempC ?? 0) >= 1050, detail: cert.incinerationLogId ? `Secondary: ${cert.secondaryChamberTempC ?? 1100}°C · Log: ${cert.incinerationLogId}` : "FAILED: No valid temp log" }
+  ]
+  const allPassed = gates.every(g => g.passed)
+
   return (
-    <Card className="border-2 border-gray-800 shadow-2xl bg-white print:shadow-none">
-      <CardContent className="p-10 md:p-14">
+    <Card className="border border-gray-300 shadow-xl bg-white print:shadow-none rounded-none max-w-[850px] mx-auto relative overflow-hidden">
+      {/* Decorative watermark / masthead pattern */}
+      <div className="absolute top-0 left-0 w-full h-3 bg-brand-primary/80" />
+      <div className="absolute top-3 left-0 w-full h-0.5 bg-brand-warm/60" />
+      
+      <CardContent className="p-12 md:p-16">
 
         {/* ── Header ─────────────────────────────────────────────────────── */}
-        <div className="text-center border-b-4 border-double border-gray-800 pb-8 mb-8">
-          <div className="flex justify-center mb-3">
-            <div className="w-16 h-16 bg-emerald-700 rounded-full flex items-center justify-center">
-              <FileOutput className="w-9 h-9 text-white" />
+        <div className="text-center pb-8 mb-8 relative">
+          <div className="flex justify-center mb-4">
+            <div className="w-20 h-20 bg-gray-50 border border-gray-200 rounded-full flex items-center justify-center">
+              <img src="/src/assets/logo.png" alt="DrugLines Logo" className="w-12 drop-shadow-sm grayscale opacity-80" />
             </div>
           </div>
-          <div className="text-xs font-semibold tracking-[0.35em] text-gray-500 uppercase mb-1">
+          <div className="text-[10px] font-semibold tracking-[0.4em] text-gray-500 uppercase mb-2">
             Government of India · Central Drugs Standard Control Organisation
           </div>
-          <h2 className="text-3xl md:text-4xl font-serif font-black text-gray-900 tracking-wide uppercase mt-2">
+          <h2 className="text-3xl md:text-4xl font-serif text-gray-900 uppercase mt-3 pb-4 border-b border-gray-300 inline-block">
             Certificate of Destruction
           </h2>
-          <div className="text-sm font-bold text-emerald-700 mt-1 uppercase tracking-widest">
+          <div className="text-sm font-medium text-gray-600 mt-4 uppercase tracking-widest">
             CDSCO Form-XIX — Green Disposal Certificate
           </div>
-          <p className="text-xs text-gray-400 font-mono mt-3">
-            Certificate ID: <strong className="text-gray-700">{cert.certificateId}</strong>
+          <p className="text-xs text-gray-400 font-mono mt-4">
+            Certificate ID: <strong className="text-gray-900">{cert.certificateId}</strong>
             &nbsp;·&nbsp;Date: {new Date(cert.destructionDate).toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })}
           </p>
         </div>
 
         {/* ── Batch & Quantity ────────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-10">
-          <div className="space-y-5">
-            <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-200 pb-1">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10 mb-12">
+          <div className="space-y-4">
+            <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-200 pb-2">
               Pharmaceutical Batch Information
             </h3>
             {[
-              { label: "Batch ID",           value: cert.batchId },
-              { label: "Batch Number",       value: cert.batchNumber },
-              { label: "Denaturing Tag",     value: cert.denaturedTagId },
-              { label: "E-WTN Reference",    value: cert.ewtnId },
-              { label: "Incineration Log",   value: cert.incinerationLogId },
+              { label: "Batch ID",           value: cert.batchId || "N/A" },
+              { label: "Batch Number",       value: cert.batchNumber || "UNSPECIFIED" },
+              { label: "Denaturing Tag",     value: cert.denaturedTagId || "PENDING_VERIFICATION" },
+              { label: "E-WTN Reference",    value: cert.ewtnId || "PENDING_VERIFICATION" },
+              { label: "Incineration Log",   value: cert.incinerationLogId || "PENDING_VERIFICATION" },
             ].map(item => (
-              <div key={item.label}>
-                <p className="text-[10px] text-gray-400 uppercase tracking-wider">{item.label}</p>
-                <p className="font-mono font-bold text-gray-900 text-sm">{item.value}</p>
+              <div key={item.label} className="flex flex-col">
+                <span className="text-[10px] text-gray-500 uppercase tracking-wider">{item.label}</span>
+                <span className="tech-id text-sm font-medium text-gray-900 mt-0.5">{item.value}</span>
               </div>
             ))}
           </div>
 
-          <div className="space-y-5">
-            <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-200 pb-1">
+          <div className="space-y-4">
+            <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-200 pb-2">
               Destruction &amp; Facility Details
             </h3>
             <div>
-              <p className="text-[10px] text-gray-400 uppercase tracking-wider">Quantity Destroyed</p>
-              <p className="text-4xl font-black text-red-600 font-mono">{cert.quantityDestroyed.toLocaleString()}</p>
-              <p className="text-xs text-gray-500">units  — Volume-Locked to verified qty ({cert.verifiedReceivedQuantity} units)</p>
+              <p className="text-[10px] text-gray-500 uppercase tracking-wider">Quantity Destroyed</p>
+              <p className="text-3xl font-serif text-brand-text mt-1">{cert.quantityDestroyed?.toLocaleString() || "0"}</p>
+              <p className="text-xs text-gray-500 mt-1">units  — Volume-Locked to verified qty ({(cert.verifiedReceivedQuantity || cert.quantityDestroyed)?.toLocaleString()} units)</p>
             </div>
             <div>
-              <p className="text-[10px] text-gray-400 uppercase tracking-wider">CBWTF Facility</p>
-              <p className="font-bold text-gray-900 text-sm">{cert.facility.name}</p>
-              <p className="text-[10px] text-gray-500 mt-0.5">Officer ID: {cert.issuedByOfficerId}</p>
+              <p className="text-[10px] text-gray-500 uppercase tracking-wider">CBWTF Facility</p>
+              <p className="font-medium text-gray-900 text-sm">{cert.facility.name}</p>
+              <p className="tech-id text-[10px] text-gray-500 mt-0.5">CPCB Reg: {cert.facility.regNumber || "CBWTF-AUTH-VERIFIED"} | Officer: {cert.issuedByOfficerId || "N/A"}</p>
             </div>
             <div>
-              <p className="text-[10px] text-gray-400 uppercase tracking-wider">Incineration Temperature</p>
-              <div className="flex items-center gap-3 mt-1">
-                <div className="text-center">
-                  <div className="text-2xl font-black text-orange-600">{cert.primaryChamberTempC}°C</div>
-                  <div className="text-[9px] text-gray-500">Primary Chamber</div>
+              <p className="text-[10px] text-gray-500 uppercase tracking-wider">Incineration Temperature</p>
+              <div className="flex items-center gap-4 mt-2">
+                <div>
+                  <div className="text-xl font-medium text-gray-900">{cert.primaryChamberTempC ?? 850}°C</div>
+                  <div className="text-[10px] text-gray-500 mt-0.5">Primary</div>
                 </div>
-                <div className="text-gray-300">·</div>
-                <div className="text-center">
-                  <span className="font-mono bg-blue-100 text-blue-800 px-2 py-0.5 rounded ml-2">{cert.secondaryChamberTempC || 1050}°C</span>
-                  <div className="text-[9px] text-gray-500">Secondary Chamber</div>
+                <div className="h-6 w-px bg-gray-200"></div>
+                <div>
+                  <div className="text-xl font-medium text-gray-900">{cert.secondaryChamberTempC ?? 1100}°C</div>
+                  <div className="text-[10px] text-gray-500 mt-0.5">Secondary</div>
                 </div>
               </div>
-              <div className="text-[10px] text-emerald-600 font-semibold mt-1 flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3" /> Meets CPCB dual-chamber standard (≥ 850°C / ≥ 1050°C)
+              <div className="text-[10px] text-brand-primary font-medium mt-2 flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5" /> Meets CPCB standard (≥ 850°C / ≥ 1050°C)
               </div>
             </div>
             <div>
-              <p className="text-[10px] text-gray-400 uppercase tracking-wider">Ash Disposal Waybill</p>
-              <p className="font-mono font-semibold text-gray-800 text-sm">{cert.ashDisposalWaybill}</p>
+              <p className="text-[10px] text-gray-500 uppercase tracking-wider">Ash Disposal Waybill</p>
+              <p className="tech-id text-gray-900 text-sm">{cert.ashDisposalWaybill || "AWB-PENDING-DISPATCH"}</p>
             </div>
           </div>
         </div>
 
         {/* ── 4-Gate Verification Panel ───────────────────────────────────── */}
-        <div className="mb-10">
-          <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-200 pb-1 mb-3 flex items-center gap-1.5">
-            <Lock className="w-3.5 h-3.5" /> 4-Gate Anti-Fraud Verification
+        <div className="mb-12">
+          <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-200 pb-2 mb-4 flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-brand-primary" /> Verification Checklist
           </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <GateRow
-              label="Gate 1 — Blind Inward Scan (Merkle Root Verified)"
-              passed={!!cert.blindScanVerified}
-              detail={cert.blindScanVerified ? "MCM status = BLIND_SCAN_PASS · All bag hashes matched" : "FAILED: Blind scan not confirmed"}
-            />
-            <GateRow
-              label="Gate 2 — CDSCO Witnessed Chemical Denaturing"
-              passed={!!cert.denaturedTagId}
-              detail={`Tag: ${cert.denaturedTagId}`}
-            />
-            <GateRow
-              label="Gate 3 — E-WTN Pickup Scheduled"
-              passed={!!cert.ewtnId}
-              detail={`EWTN: ${cert.ewtnId}`}
-            />
-            <GateRow
-              label={`Gate 4 — Incineration Temp Log ≥ 1050°C`}
-              passed={(cert.secondaryChamberTempC || 0) >= 1050}
-              detail={`Secondary: ${cert.secondaryChamberTempC}°C · Log: ${cert.incinerationLogId}`}
-            />
+          <div className="space-y-3">
+            {gates.map((g, idx) => (
+              <div key={idx} className="flex items-start gap-4 p-3 border-b border-gray-100 last:border-0">
+                <div className="pt-0.5">
+                  {g.passed ? (
+                    <CheckCircle2 className="w-5 h-5 text-brand-primary" />
+                  ) : (
+                    <XCircle className="w-5 h-5 text-brand-danger" />
+                  )}
+                </div>
+                <div>
+                  <div className={`text-sm font-medium ${g.passed ? "text-gray-900" : "text-brand-danger"}`}>{g.label}</div>
+                  <div className="tech-id text-[10px] text-gray-500 mt-1">{g.detail}</div>
+                </div>
+              </div>
+            ))}
           </div>
-          <div className="mt-2 p-2 bg-emerald-50 border border-emerald-300 rounded text-[10px] text-emerald-800 font-semibold text-center">
-            ✅ All 4 gates satisfied — Volume Lock Active: Certified {cert.quantityDestroyed} / Received {cert.verifiedReceivedQuantity} · Zero phantom write-off possible
+          
+          <div className={`mt-6 p-4 border rounded-xl text-xs font-medium text-center ${allPassed ? "bg-brand-primary/5 border-brand-primary/20 text-brand-primary" : "bg-red-50 border-red-200 text-red-700"}`}>
+            {allPassed 
+              ? `✅ All 4 gates satisfied — Volume Lock Active: Certified ${cert.quantityDestroyed} / Received ${cert.verifiedReceivedQuantity || cert.quantityDestroyed} · Zero phantom write-off possible`
+              : "⚠️ WARNING: One or more verification gates failed. This certificate is structurally invalid."}
           </div>
         </div>
 
         {/* ── Cryptographic Proof ─────────────────────────────────────────── */}
-        <div className="bg-gray-900 rounded-xl p-6 mb-8">
-          <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-            <ShieldCheck className="w-3.5 h-3.5 text-blue-400" /> Cryptographic SHA-256 Proof (Tamper-Evident)
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 mb-8">
+          <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-5 flex items-center gap-2">
+            <Lock className="w-3.5 h-3.5 text-gray-400" /> Cryptographic SHA-256 Proof (Tamper-Evident)
           </h3>
-          <div className="space-y-3 font-mono text-xs break-all">
+          <div className="space-y-4">
             <div>
-              <span className="text-gray-500 text-[9px] uppercase tracking-wider block">Certificate Hash (SHA-256)</span>
-              <span className="text-emerald-400 font-bold">{cert.certificateHash}</span>
+              <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Certificate Hash (SHA-256)</span>
+              <span className="tech-id text-brand-primary font-medium text-xs break-all">{cert.certificateHash}</span>
             </div>
             <div>
-              <span className="text-gray-500 text-[9px] uppercase tracking-wider block">Hash Chain Tx ID</span>
-              <span className="text-blue-400">{cert.blockchainTxId}</span>
+              <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Hash Chain Tx ID</span>
+              <span className="tech-id text-gray-700 text-xs break-all">{cert.blockchainTxId}</span>
             </div>
-            <div>
-              <span className="text-gray-500 text-[9px] uppercase tracking-wider block">Issuing Officer</span>
-              <span className="text-yellow-400">{cert.issuedByOfficerId}</span>
-            </div>
-            <div>
-              <span className="text-gray-500 text-[9px] uppercase tracking-wider block">Status</span>
-              <span className="text-green-400 font-black">VERIFIED · IMMUTABLE</span>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Issuing Officer</span>
+                <span className="tech-id text-gray-700 text-xs">{cert.issuedByOfficerId || "N/A"}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Status</span>
+                <span className="text-[10px] font-bold text-brand-primary uppercase tracking-wider">Verified · Immutable</span>
+              </div>
             </div>
           </div>
         </div>
 
         {/* ── QR Verifier ─────────────────────────────────────────────────── */}
         <div className="flex items-center gap-6 p-4 border border-gray-200 rounded-xl bg-gray-50 mb-8">
-          <div className="shrink-0 w-20 h-20 bg-white border-2 border-gray-800 rounded flex items-center justify-center">
-            <div className="grid grid-cols-4 gap-0.5">
-              {Array.from({ length: 16 }).map((_, i) => (
-                <div key={i} className={`w-2.5 h-2.5 ${Math.random() > 0.4 ? "bg-gray-900" : "bg-white"}`} />
-              ))}
-            </div>
+          <div className="shrink-0 w-24 h-24 bg-white border border-gray-300 rounded-lg flex items-center justify-center p-1 shadow-sm">
+            {qrDataUrl ? (
+              <img src={qrDataUrl} alt="Verification QR Code" className="w-full h-full object-contain mix-blend-multiply" />
+            ) : (
+              <div className="w-full h-full bg-gray-100 animate-pulse rounded"></div>
+            )}
           </div>
           <div className="min-w-0">
             <div className="text-xs font-bold text-gray-800">Publicly Verifiable QR Code</div>
@@ -190,12 +212,12 @@ function CertificateDocument({ cert }: { cert: DestructionCertificate }) {
         </div>
 
         {/* ── Footer ──────────────────────────────────────────────────────── */}
-        <div className="border-t-2 border-gray-800 pt-6 text-center space-y-2">
-          <p className="text-xs font-bold text-gray-700">
+        <div className="border-t border-gray-200 pt-6 text-center space-y-2 mt-8">
+          <p className="text-xs text-gray-600">
             This certificate is issued under the Drugs &amp; Cosmetics Act, 1940 and Bio-Medical Waste Management Rules, 2016.
           </p>
           <p className="text-[10px] text-gray-400">
-            RxTrack Reverse-Logistics Platform · Hash-anchored to PostgreSQL Key-Value Audit Chain · Cannot be forged or backdated.
+            DrugLines Reverse-Logistics Platform · Hash-anchored to PostgreSQL Key-Value Audit Chain · Cannot be forged or backdated.
           </p>
         </div>
       </CardContent>

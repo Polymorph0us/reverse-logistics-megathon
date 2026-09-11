@@ -16,7 +16,21 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['"Inter Variable"', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'monospace'],
+        serif: ['"Playfair Display"', 'serif'],
+      },
       colors: {
+        brand: {
+          primary: "#4F46E5",
+          secondary: "#0EA5E9",
+          warm: "#EC7BAE",
+          danger: "#DC2626",
+          text: "#1A1D29",
+          muted: "#6B7280",
+          bg: "#F7F8FA"
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
