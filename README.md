@@ -1,4 +1,4 @@
-# DrugLine 🚀
+# DrugLine 
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 ![Version](https://img.shields.io/badge/version-1.0.0-green)
@@ -10,7 +10,7 @@
 
 **ReversePass** is a high-performance, cryptographic full-stack platform for pharmaceutical reverse logistics. It tracks the return lifecycle of expired or recalled medicines from retailers back to manufacturers, preventing counterfeit re-entry, resolving quantity disputes, and automatically generating verifiable Proof-of-Destruction certificates.
 
-## 🌟 Why ReversePass?
+##  Why ReversePass?
 Pharmaceutical reverse supply chains are incredibly opaque, making them prime targets for fraud, skimming, and unauthorized reselling. Existing solutions rely on expensive hardware or heavy blockchains. 
 
 **ReversePass solves this by combining a modern React frontend with a secure Spring Boot backend using:**
@@ -19,21 +19,21 @@ Pharmaceutical reverse supply chains are incredibly opaque, making them prime ta
 - **Automated Fraud Detection** for quantity mismatches and suspicious return patterns.
 - **Strict Idempotency & Optimistic Locking** to ensure data consistency and prevent race conditions across thousands of simultaneous supply chain scans.
 
-## 🏗️ System Architecture
+##  System Architecture
 
 ReversePass is a monorepo containing a modern SPA frontend and a robust Java microservice backend.
 
 - **Frontend (`/`)**: A reactive, single-page application built with **React 19**, **Vite**, **Tailwind CSS**, and **shadcn/ui**. Features role-specific dashboards (Retailer, Distributor, Manufacturer, Regulator), interactive charts using **Recharts**, and state management via **Zustand**.
 - **Backend (`/backend`)**: A secure **Spring Boot 3** REST API powered by **PostgreSQL 15**. It handles JWT role-based access control, idempotent dispatch state machines, high-performance indexed queries (N+1 eliminated), and on-the-fly PDF generation via **OpenPDF** and **ZXing**.
 
-## 🛠 Prerequisites
+##  Prerequisites
 
 - **Node.js 20+**
 - **Java 17+**
 - **Maven 3.8+**
 - **PostgreSQL 15+** (or Docker)
 
-## 💻 Installation & Setup
+##  Installation & Setup
 
 1. **Clone the repository:**
    ```bash
@@ -102,6 +102,6 @@ Once the backend is running, explore the interactive API documentation at:
 6. **Destruction & PDF Certification:**
    The verified batch is destroyed. The system generates a QR-encoded, dynamically generated PDF Certificate of Destruction.
 
-## 📜 License
+##  License
 
 This project is licensed under the [MIT License](LICENSE).
