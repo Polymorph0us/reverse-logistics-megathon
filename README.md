@@ -1,4 +1,4 @@
-# DrugLine 
+# DrugLines 
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 ![Version](https://img.shields.io/badge/version-1.0.0-green)
@@ -8,9 +8,9 @@
 ![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.3.4-brightgreen)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue)
 
-**DrugLine** is a high-performance, cryptographic full-stack platform for pharmaceutical reverse logistics. It tracks the return lifecycle of expired or recalled medicines from retailers back to manufacturers, preventing counterfeit re-entry, resolving quantity disputes, and automatically generating verifiable Proof-of-Destruction certificates.
+**DrugLines** is a high-performance, cryptographic full-stack platform for pharmaceutical reverse logistics. It tracks the return lifecycle of expired or recalled medicines from retailers back to manufacturers, preventing counterfeit re-entry, resolving quantity disputes, and automatically generating verifiable Proof-of-Destruction certificates.
 
-##  Why DrugLine?
+##  Why DrugLines?
 Pharmaceutical reverse supply chains are incredibly opaque, making them prime targets for fraud, skimming, and unauthorized reselling. Existing solutions rely on expensive hardware or heavy blockchains. 
 
 **ReversePass solves this by combining a modern React frontend with a secure Spring Boot backend using:**
