@@ -1,4 +1,4 @@
-# ReversePass 🚀
+# DrugLine 🚀
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 ![Version](https://img.shields.io/badge/version-1.0.0-green)
