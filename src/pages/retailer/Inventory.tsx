@@ -20,7 +20,6 @@ import {
   ExternalLink, 
   Filter,
   Layers,
-  Trash2,
   PlusCircle,
   X
 } from "lucide-react"
@@ -51,13 +50,6 @@ export function RetailerInventory() {
       setLoading(false)
     })
   }, [])
-
-  const handleClearAllData = () => {
-    if (window.confirm("Are you sure you want to clear all mock data? This will empty all batches and returns so you can enter fresh data.")) {
-      useSharedStore.getState().clearAllData()
-      setBatches([])
-    }
-  }
 
   const handleAddBatch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -165,19 +157,8 @@ export function RetailerInventory() {
 
         <div className="flex items-center gap-3">
           <Button
-            variant="outline"
             size="sm"
-            className="border-red-200 text-red-700 hover:bg-red-50 hover:border-red-300"
-            onClick={handleClearAllData}
-            title="Clear all mock batches and start completely fresh"
-          >
-            <Trash2 className="w-4 h-4 mr-1.5 text-red-500" />
-            Clear Mock Data
-          </Button>
-
-          <Button
-            size="sm"
-            className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm cursor-pointer"
             onClick={() => setIsAddModalOpen(true)}
           >
             <PlusCircle className="w-4 h-4 mr-1.5" />
@@ -195,7 +176,6 @@ export function RetailerInventory() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">{totalCount}</div>
-            <p className="text-xs text-gray-500 mt-1">Tracked across supply chain</p>
           </CardContent>
         </Card>
 
@@ -206,7 +186,6 @@ export function RetailerInventory() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-emerald-600">{activeCount}</div>
-            <p className="text-xs text-gray-500 mt-1">Verified safe for dispensing</p>
           </CardContent>
         </Card>
 
@@ -217,7 +196,6 @@ export function RetailerInventory() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-amber-600">{expiringSoonCount}</div>
-            <p className="text-xs text-amber-700 font-medium mt-1">Eligible for supplier recall</p>
           </CardContent>
         </Card>
 
@@ -230,9 +208,6 @@ export function RetailerInventory() {
             <div className="text-2xl font-bold text-red-600">
               {expiredCount + returnInitiatedCount}
             </div>
-            <p className="text-xs text-red-600 font-medium mt-1">
-              {returnInitiatedCount} returns in progress
-            </p>
           </CardContent>
         </Card>
       </div>

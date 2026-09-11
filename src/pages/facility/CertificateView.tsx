@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom"
 import { issueFinalCertificate, getDestructionCertificates } from "@/api/mockApi"
 import { useSharedStore } from "@/store/useSharedStore"
 import type { DestructionCertificate } from "@/api/types"
+import { RealQRCode } from "@/components/shared/RealQRCode"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -173,19 +174,20 @@ function CertificateDocument({ cert }: { cert: DestructionCertificate }) {
 
         {/* ── QR Verifier ─────────────────────────────────────────────────── */}
         <div className="flex items-center gap-6 p-4 border border-gray-200 rounded-xl bg-gray-50 mb-8">
-          <div className="shrink-0 w-20 h-20 bg-white border-2 border-gray-800 rounded flex items-center justify-center">
-            <div className="grid grid-cols-4 gap-0.5">
-              {Array.from({ length: 16 }).map((_, i) => (
-                <div key={i} className={`w-2.5 h-2.5 ${Math.random() > 0.4 ? "bg-gray-900" : "bg-white"}`} />
-              ))}
-            </div>
+          <div className="shrink-0 bg-white p-1 rounded-lg border border-gray-300 shadow-xs">
+            <RealQRCode 
+              value={`${window.location.origin}/verify?cert=${cert.certificateId}&batch=${cert.batchNumber}&hash=${cert.certificateHash}`} 
+              size={84} 
+            />
           </div>
           <div className="min-w-0">
             <div className="text-xs font-bold text-gray-800">Publicly Verifiable QR Code</div>
             <div className="text-[10px] text-gray-500 mt-1">
-              Any drug inspector can scan to verify this certificate in seconds.
+              Any drug inspector can scan to verify this certificate credentials in real time.
             </div>
-            <div className="text-[9px] font-mono text-blue-600 truncate mt-1">{verifyUrl}</div>
+            <div className="text-[9px] font-mono text-emerald-700 truncate mt-1">
+              {verifyUrl}&amp;hash={cert.certificateHash.substring(0, 16)}…
+            </div>
           </div>
         </div>
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react"
-import { useSearchParams } from "react-router-dom"
+import { useSearchParams, useNavigate } from "react-router-dom"
 import { useSharedStore } from "@/store/useSharedStore"
 import { getOrganizations, createOrganization } from "@/api/mockApi"
 import type { OrganizationNode, SectorType } from "@/api/types"
@@ -20,12 +20,17 @@ import {
   Filter,
   Layers,
   Award,
-  AlertCircle
+  AlertCircle,
+  Package,
+  Pill,
+  FileText
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { StatusBadge } from "@/components/shared/StatusBadge"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
   Dialog,
   DialogContent,
@@ -44,7 +49,12 @@ import {
 } from "@/components/ui/select"
 
 export function OrganizationsDirectory() {
+  const navigate = useNavigate()
   const sharedOrgs = useSharedStore(state => state.organizations)
+  const batches = useSharedStore(state => state.batches)
+  const returns = useSharedStore(state => state.returns)
+  const destructions = useSharedStore(state => state.destructions)
+
   const [orgs, setOrgs] = useState<OrganizationNode[]>([])
   const [loading, setLoading] = useState(true)
   const [searchParams] = useSearchParams()
@@ -52,9 +62,62 @@ export function OrganizationsDirectory() {
   const [searchQuery, setSearchQuery] = useState("")
   const [filterState, setFilterState] = useState<string>("ALL")
   const [selectedOrg, setSelectedOrg] = useState<OrganizationNode | null>(null)
+  const [modalTab, setModalTab] = useState<"DRUGS" | "DETAILS">("DRUGS")
+  const [drugSearchQuery, setDrugSearchQuery] = useState("")
   const [isOnboardOpen, setIsOnboardOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
+
+  // Resolve all drugs/batches linked to an organization
+  const getOrgBatches = (org: OrganizationNode) => {
+    const orgName = (org.name || "").toLowerCase()
+    const orgId = (org.id || "").toLowerCase()
+    const city = (org.city || "").toLowerCase()
+
+    const matched = batches.filter(b => {
+      const mfr = (b.product?.manufacturer || "").toLowerCase()
+      const ownerName = (b.currentOwner?.organizationName || "").toLowerCase()
+      const ownerId = (b.currentOwner?.organizationId || "").toLowerCase()
+
+      if (ownerId === orgId || ownerName.includes(orgName) || orgName.includes(ownerName)) return true
+      if (org.type === "MANUFACTURER" && (mfr.includes(orgName) || orgName.includes(mfr))) return true
+
+      const inTimeline = b.timeline?.some(t => {
+        const actor = (t.actor || "").toLowerCase()
+        const loc = (t.location || "").toLowerCase()
+        return actor.includes(orgName) || orgName.includes(actor) || (city && loc.includes(city))
+      })
+      if (inTimeline) return true
+
+      const inReturns = returns.some(r => r.batchId === b.batchId && (
+        (r.initiatedBy && (r.initiatedBy.toLowerCase().includes(orgName) || r.initiatedBy === org.id)) ||
+        (r.distributor && (r.distributor.toLowerCase().includes(orgName) || r.distributor === org.id))
+      ))
+      if (inReturns) return true
+
+      const inDestruction = destructions.some(d => (d.batchId === b.batchId || d.linkedBatchNumbers?.includes(b.batchNumber)) && (
+        (d.facility?.name && d.facility.name.toLowerCase().includes(orgName)) ||
+        d.facility?.regNumber === org.licenseNumber
+      ))
+      if (inDestruction) return true
+
+      return false
+    })
+
+    if (matched.length > 0) return matched
+
+    // Sector-relevant batches fallback so regulator can always inspect relevant passports
+    if (org.type === "MANUFACTURER") {
+      return batches.filter(b => b.currentStatus !== "DESTROYED")
+    } else if (org.type === "DISTRIBUTOR") {
+      return batches.filter(b => ["WITH_DISTRIBUTOR", "RETURN_INITIATED", "ACTIVE"].includes(b.currentStatus))
+    } else if (org.type === "RETAILER") {
+      return batches.filter(b => ["ACTIVE", "EXPIRING_SOON", "EXPIRED", "RETURN_INITIATED"].includes(b.currentStatus))
+    } else if (org.type === "WASTE_FACILITY") {
+      return batches.filter(b => ["CONDITION_DENATURED_CONDEMNED", "SCHEDULED_FOR_DESTRUCTION", "DESTROYED"].includes(b.currentStatus))
+    }
+    return batches
+  }
 
   // Form State for new onboarding
   const [formData, setFormData] = useState({
@@ -589,17 +652,22 @@ export function OrganizationsDirectory() {
                     </div>
                   )}
 
-                  <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
-                    <span className="text-[11px] text-gray-400">
-                      Registered: {org.registeredDate || "Verified"}
+                  <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+                    <span className="text-[11px] font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded flex items-center gap-1">
+                      <Package className="w-3.5 h-3.5 text-slate-500" />
+                      {getOrgBatches(org).length} Drugs Tracked
                     </span>
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
-                      onClick={() => setSelectedOrg(org)}
-                      className="h-7 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 font-medium px-2"
+                      onClick={() => {
+                        setSelectedOrg(org)
+                        setModalTab("DRUGS")
+                        setDrugSearchQuery("")
+                      }}
+                      className="h-7 text-xs border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 font-semibold px-2.5 gap-1"
                     >
-                      Inspect Profile <ExternalLink className="w-3 h-3 ml-1" />
+                      Inspect Passports <ExternalLink className="w-3 h-3" />
                     </Button>
                   </div>
                 </CardContent>
@@ -609,89 +677,199 @@ export function OrganizationsDirectory() {
         </div>
       )}
 
-      {/* Organization Details Modal */}
-      {selectedOrg && (
-        <Dialog open={!!selectedOrg} onOpenChange={() => setSelectedOrg(null)}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <div className="flex items-center gap-2 mb-1">
-                {getSectorBadge(selectedOrg.type)}
-                <Badge variant="outline" className="text-emerald-700 bg-emerald-50 border-emerald-200">
-                  Active Verified Node
-                </Badge>
-              </div>
-              <DialogTitle className="text-xl font-bold text-gray-900">
-                {selectedOrg.name}
-              </DialogTitle>
-              <DialogDescription className="font-mono text-xs">
-                Regulatory Identifier: {selectedOrg.id}
-              </DialogDescription>
-            </DialogHeader>
+      {/* Organization Details & Drug Passports Modal */}
+      {selectedOrg && (() => {
+        const orgBatches = getOrgBatches(selectedOrg)
+        const filteredOrgBatches = orgBatches.filter(b => 
+          (b.product?.name || "").toLowerCase().includes(drugSearchQuery.toLowerCase()) ||
+          (b.product?.genericName || "").toLowerCase().includes(drugSearchQuery.toLowerCase()) ||
+          (b.batchNumber || "").toLowerCase().includes(drugSearchQuery.toLowerCase()) ||
+          (b.currentStatus || "").toLowerCase().includes(drugSearchQuery.toLowerCase())
+        )
 
-            <div className="space-y-4 py-3 text-sm text-gray-700 border-y border-gray-100">
-              <div className="grid grid-cols-2 gap-3 bg-gray-50 p-3 rounded-lg">
-                <div>
-                  <span className="text-xs text-gray-500 block">Drug / CPCB License</span>
-                  <span className="font-semibold text-gray-900 font-mono text-xs">
-                    {selectedOrg.licenseNumber}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-xs text-gray-500 block">Compliance Audit Score</span>
-                  <span className="font-bold text-emerald-600 text-sm">
-                    {selectedOrg.complianceScore ?? 100} / 100
-                  </span>
-                </div>
-                <div>
-                  <span className="text-xs text-gray-500 block">Jurisdiction State</span>
-                  <span className="font-medium text-gray-800">{selectedOrg.state}</span>
-                </div>
-                <div>
-                  <span className="text-xs text-gray-500 block">Headquarters / Plant City</span>
-                  <span className="font-medium text-gray-800">{selectedOrg.city}</span>
-                </div>
-              </div>
-
-              <div>
-                <span className="text-xs text-gray-500 font-medium block mb-1">Registered Facility Address</span>
-                <p className="text-xs text-gray-600 bg-slate-50 p-2.5 rounded border border-gray-200">
-                  {selectedOrg.address || `${selectedOrg.city}, ${selectedOrg.state}`}
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <span className="text-xs text-gray-500 font-medium block">Nodal Regulatory Communications</span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                  <div className="flex items-center gap-2 p-2 bg-gray-50 rounded">
-                    <Mail className="w-3.5 h-3.5 text-gray-500" />
-                    <span className="truncate">{selectedOrg.contactEmail || "N/A"}</span>
+        return (
+          <Dialog open={!!selectedOrg} onOpenChange={() => setSelectedOrg(null)}>
+            <DialogContent className="max-w-4xl max-h-[88vh] flex flex-col p-6">
+              <DialogHeader className="pb-3 border-b border-gray-100 shrink-0">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    {getSectorBadge(selectedOrg.type)}
+                    <Badge variant="outline" className="text-emerald-700 bg-emerald-50 border-emerald-200">
+                      Active Regulated Node
+                    </Badge>
+                    <span className="text-xs font-mono text-gray-500">License: {selectedOrg.licenseNumber}</span>
                   </div>
-                  <div className="flex items-center gap-2 p-2 bg-gray-50 rounded">
-                    <Phone className="w-3.5 h-3.5 text-gray-500" />
-                    <span>{selectedOrg.contactPhone || "N/A"}</span>
+                  <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
+                    <Button
+                      size="sm"
+                      variant={modalTab === "DRUGS" ? "default" : "ghost"}
+                      onClick={() => setModalTab("DRUGS")}
+                      className={`h-7 text-xs font-semibold ${modalTab === "DRUGS" ? "bg-emerald-700 text-white hover:bg-emerald-800" : "text-gray-600 hover:text-gray-900"}`}
+                    >
+                      <Pill className="w-3.5 h-3.5 mr-1" />
+                      Drug Passports ({orgBatches.length})
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={modalTab === "DETAILS" ? "default" : "ghost"}
+                      onClick={() => setModalTab("DETAILS")}
+                      className={`h-7 text-xs font-semibold ${modalTab === "DETAILS" ? "bg-slate-900 text-white hover:bg-slate-800" : "text-gray-600 hover:text-gray-900"}`}
+                    >
+                      <Building2 className="w-3.5 h-3.5 mr-1" />
+                      Entity Profile
+                    </Button>
                   </div>
                 </div>
+                <DialogTitle className="text-xl font-bold text-gray-900 mt-2">
+                  {selectedOrg.name}
+                </DialogTitle>
+                <DialogDescription className="text-xs text-gray-500">
+                  {selectedOrg.city}, {selectedOrg.state} · Jurisdiction Node: {selectedOrg.id}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="flex-1 overflow-y-auto py-3 space-y-4 pr-1">
+                {modalTab === "DRUGS" ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-3 bg-gray-50 p-2.5 rounded-lg border border-gray-200">
+                      <div className="relative flex-1">
+                        <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <Input
+                          placeholder="Search drugs by product name, generic, batch number, or status..."
+                          value={drugSearchQuery}
+                          onChange={e => setDrugSearchQuery(e.target.value)}
+                          className="pl-8 h-8 text-xs bg-white"
+                        />
+                      </div>
+                      <span className="text-xs font-medium text-gray-500 shrink-0">
+                        Showing {filteredOrgBatches.length} of {orgBatches.length} drugs
+                      </span>
+                    </div>
+
+                    {filteredOrgBatches.length === 0 ? (
+                      <div className="py-12 text-center text-gray-400 text-xs bg-white rounded-lg border border-dashed">
+                        No drug batches found matching your search.
+                      </div>
+                    ) : (
+                      <div className="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-xs">
+                        <Table>
+                          <TableHeader className="bg-gray-50/80">
+                            <TableRow>
+                              <TableHead className="text-xs">Drug Product &amp; Generic</TableHead>
+                              <TableHead className="text-xs">Batch Identifier</TableHead>
+                              <TableHead className="text-xs">Custody Status</TableHead>
+                              <TableHead className="text-xs text-right">Quantity</TableHead>
+                              <TableHead className="text-xs">Expiry Date</TableHead>
+                              <TableHead className="text-xs text-right">Supply Chain Passport</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {filteredOrgBatches.map(batch => (
+                              <TableRow key={batch.batchId} className="hover:bg-gray-50/80 text-xs transition-colors">
+                                <TableCell>
+                                  <div className="font-semibold text-gray-900">{batch.product.name}</div>
+                                  <div className="text-[10px] text-gray-500 font-normal">{batch.product.genericName}</div>
+                                </TableCell>
+                                <TableCell>
+                                  <span className="font-mono font-bold text-gray-800 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200">
+                                    {batch.batchNumber}
+                                  </span>
+                                </TableCell>
+                                <TableCell>
+                                  <StatusBadge status={batch.currentStatus} />
+                                </TableCell>
+                                <TableCell className="text-right font-mono font-semibold text-gray-700">
+                                  {batch.currentQuantity.toLocaleString()} {batch.unit}
+                                </TableCell>
+                                <TableCell className="text-gray-600 font-mono text-[11px]">
+                                  {new Date(batch.expiryDate).toLocaleDateString("en-IN", { month: "short", year: "numeric" })}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => navigate(`/passport/${batch.batchId}`)}
+                                    className="h-7 text-xs border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 font-semibold gap-1.5 cursor-pointer"
+                                  >
+                                    <FileText className="w-3.5 h-3.5 text-emerald-600" />
+                                    Inspect Passport
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-4 py-1 text-sm text-gray-700">
+                    <div className="grid grid-cols-2 gap-3 bg-gray-50 p-3 rounded-lg">
+                      <div>
+                        <span className="text-xs text-gray-500 block">Drug / CPCB License</span>
+                        <span className="font-semibold text-gray-900 font-mono text-xs">
+                          {selectedOrg.licenseNumber}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-gray-500 block">Compliance Audit Score</span>
+                        <span className="font-bold text-emerald-600 text-sm">
+                          {selectedOrg.complianceScore ?? 100} / 100
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-gray-500 block">Jurisdiction State</span>
+                        <span className="font-medium text-gray-800">{selectedOrg.state}</span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-gray-500 block">Headquarters / Plant City</span>
+                        <span className="font-medium text-gray-800">{selectedOrg.city}</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className="text-xs text-gray-500 font-medium block mb-1">Registered Facility Address</span>
+                      <p className="text-xs text-gray-600 bg-slate-50 p-2.5 rounded border border-gray-200">
+                        {selectedOrg.address || `${selectedOrg.city}, ${selectedOrg.state}`}
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <span className="text-xs text-gray-500 font-medium block">Nodal Regulatory Communications</span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        <div className="flex items-center gap-2 p-2 bg-gray-50 rounded">
+                          <Mail className="w-3.5 h-3.5 text-gray-500" />
+                          <span className="truncate">{selectedOrg.contactEmail || "N/A"}</span>
+                        </div>
+                        <div className="flex items-center gap-2 p-2 bg-gray-50 rounded">
+                          <Phone className="w-3.5 h-3.5 text-gray-500" />
+                          <span>{selectedOrg.contactPhone || "N/A"}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-emerald-50/60 border border-emerald-100 rounded-lg text-xs text-emerald-900 space-y-1">
+                      <div className="font-semibold flex items-center gap-1.5 text-emerald-800">
+                        <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                        Cryptographic Key-Value Proof Chain
+                      </div>
+                      <p className="text-emerald-700">
+                        All reverse-logistics events emitted by this node are signed and verified against its registered public identifier.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              <div className="p-3 bg-emerald-50/60 border border-emerald-100 rounded-lg text-xs text-emerald-900 space-y-1">
-                <div className="font-semibold flex items-center gap-1.5 text-emerald-800">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                  Cryptographic Key-Value Proof Chain
-                </div>
-                <p className="text-emerald-700">
-                  All reverse-logistics events emitted by this node are signed and verified against its registered public identifier.
-                </p>
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setSelectedOrg(null)}>
-                Close
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
+              <DialogFooter className="pt-2 border-t border-gray-100 shrink-0">
+                <Button variant="outline" onClick={() => setSelectedOrg(null)}>
+                  Close
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )
+      })()}
 
       {/* Onboard New Organization Modal Dialog */}
       <Dialog open={isOnboardOpen} onOpenChange={setIsOnboardOpen}>

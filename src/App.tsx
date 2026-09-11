@@ -85,6 +85,7 @@ export default function App() {
           <Route index element={<RoleBasedRedirect />} />
           
           <Route path="batch/:batchId" element={<BatchPassportView />} />
+          <Route path="passport/:batchId" element={<BatchPassportView />} />
           <Route path="organizations" element={<OrganizationsDirectory />} />
 
           {/* Retailer */}

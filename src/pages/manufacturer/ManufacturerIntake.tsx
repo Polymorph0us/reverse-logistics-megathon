@@ -1,15 +1,16 @@
 import { useState, useEffect, useRef } from "react"
+import { useNavigate } from "react-router-dom"
 import { useSharedStore } from "@/store/useSharedStore"
 import { runBlindScan, tagDenatured, getMasterConsignments, getDenaturedTags } from "@/api/mockApi"
 import type { MasterConsignment, DenaturedBatchTag, BlindScanResult, DenaturationAgent } from "@/api/types"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import {
   ScanLine, ShieldAlert, FlaskConical, CheckCircle2, XCircle,
-  AlertTriangle, Plus, X, Loader2, Eye, EyeOff, FileCheck, Flame,
+  AlertTriangle, Plus, X, Loader2, Eye, EyeOff, FileCheck, ArrowLeft,
 } from "lucide-react"
 
 // ── Chemical agent registry ───────────────────────────────────────────────────
@@ -185,45 +186,91 @@ export function ManufacturerIntake() {
     b.currentStatus === "WITH_MANUFACTURER" || b.currentStatus === "CONDITION_DENATURED_CONDEMNED"
   )
 
+  const navigate = useNavigate()
+
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900 flex items-center gap-2">
-          <ShieldAlert className="w-8 h-8 text-indigo-600" />
-          OEM Intake &amp; Pre-Destruction Authorization
-        </h1>
-        <p className="text-gray-500 mt-1 text-sm">
-          Layer 4 — Blind Inward Reconciliation (Anti-Collusion) → Chemical Denaturing (CDSCO Witnessed) → E-WTN → Certificate.
-        </p>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 flex items-center gap-2">
+            <ShieldAlert className="w-8 h-8 text-indigo-600" />
+            OEM Inward Intake &amp; Denaturing
+          </h1>
+          <p className="text-gray-500 mt-1">
+            Reconciliation of master consignments, blind inward intake, and CDSCO-witnessed denaturing.
+          </p>
+        </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => navigate("/manufacturer/dashboard")}
+          className="border-gray-200 text-gray-700 hover:bg-gray-100 cursor-pointer self-start md:self-auto"
+        >
+          <ArrowLeft className="w-4 h-4 mr-1.5" />
+          Dashboard
+        </Button>
       </div>
 
       {/* KPIs */}
-      <div className="flex flex-wrap gap-3">
-        {[
-          { label: "MCMs at Intake",      value: mcms.filter(m => m.status !== "SEALED").length,                color: "bg-indigo-50 border-indigo-200 text-indigo-800" },
-          { label: "Blind Scan Passed",   value: mcms.filter(m => m.status === "BLIND_SCAN_PASS").length,       color: "bg-emerald-50 border-emerald-200 text-emerald-700" },
-          { label: "Blind Scan Disputes", value: mcms.filter(m => m.status === "BLIND_SCAN_DISPUTE").length,    color: "bg-red-50 border-red-200 text-red-700" },
-          { label: "Denaturing Tags",     value: tags.length,                                                    color: "bg-amber-50 border-amber-200 text-amber-800" },
-        ].map(s => (
-          <div key={s.label} className={`flex items-center gap-2 px-4 py-2 rounded-lg border font-semibold ${s.color}`}>
-            <span className="text-lg font-bold">{s.value}</span>
-            <span className="text-xs">{s.label}</span>
-          </div>
-        ))}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card className="shadow-xs border-gray-200">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-gray-500">MCMs at Intake</CardTitle>
+            <ScanLine className="w-4 h-4 text-indigo-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-gray-900">
+              {mcms.filter(m => m.status !== "SEALED").length}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-xs border-gray-200">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-gray-500">Blind Scan Passed</CardTitle>
+            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-emerald-600">
+              {mcms.filter(m => m.status === "BLIND_SCAN_PASS").length}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-xs border-gray-200">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-gray-500">Blind Scan Disputes</CardTitle>
+            <AlertTriangle className="w-4 h-4 text-red-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">
+              {mcms.filter(m => m.status === "BLIND_SCAN_DISPUTE").length}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-xs border-gray-200">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-gray-500">Denaturing Tags</CardTitle>
+            <FlaskConical className="w-4 h-4 text-amber-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-amber-600">
+              {tags.length}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
         {/* ══ STEP 1: BLIND SCAN ══════════════════════════════════════════════ */}
-        <Card className="shadow-sm border-indigo-200">
-          <CardHeader className="bg-indigo-50/60 border-b border-indigo-100">
+        <Card className="shadow-xs border-gray-200">
+          <CardHeader className="bg-indigo-50/40 border-b border-indigo-100 pb-3">
             <CardTitle className="text-base font-bold flex items-center gap-2 text-indigo-900">
-              <ScanLine className="w-4 h-4" /> Step 1 — Blind Inward Scan
+              <ScanLine className="w-4 h-4 text-indigo-600" /> Step 1 — Blind Inward Scan
             </CardTitle>
-            <CardDescription className="text-xs text-indigo-700">
-              Screen is <strong>deliberately blank</strong> — scan each box code without seeing the expected manifest.
-              Backend cross-checks against the sealed Merkle tree.
-            </CardDescription>
           </CardHeader>
           <CardContent className="pt-5 space-y-4">
             <div className="space-y-1">
@@ -324,15 +371,11 @@ export function ManufacturerIntake() {
         </Card>
 
         {/* ══ STEP 2: CHEMICAL DENATURING ═════════════════════════════════════ */}
-        <Card className="shadow-sm border-amber-200">
-          <CardHeader className="bg-amber-50/60 border-b border-amber-100">
+        <Card className="shadow-xs border-gray-200">
+          <CardHeader className="bg-amber-50/40 border-b border-amber-100 pb-3">
             <CardTitle className="text-base font-bold flex items-center gap-2 text-amber-900">
-              <FlaskConical className="w-4 h-4" /> Step 2 — Pre-Destruction Denaturing Tag
+              <FlaskConical className="w-4 h-4 text-amber-600" /> Step 2 — Chemical Denaturing Tag
             </CardTitle>
-            <CardDescription className="text-xs text-amber-700">
-              CDSCO witness officer must physically witness denaturing and enter their credentials.
-              Status flips to <strong>CONDITION_DENATURED_CONDEMNED</strong>.
-            </CardDescription>
           </CardHeader>
           <CardContent className="pt-5">
             <form onSubmit={handleDenaturing} className="space-y-4">
@@ -492,18 +535,6 @@ export function ManufacturerIntake() {
           </CardContent>
         </Card>
       )}
-
-      {/* Info panel */}
-      <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg text-xs text-indigo-800 space-y-1">
-        <div className="font-bold flex items-center gap-1.5"><Flame className="w-3.5 h-3.5 text-amber-600" /> Layer 4 — Anti-Collusion Protocol</div>
-        <ul className="list-disc list-inside space-y-0.5 text-indigo-700">
-          <li><strong>Blind Scan:</strong> Screen is deliberately blank at the dock — prevents collusion between drivers and dock workers</li>
-          <li><strong>Merkle Recomputation:</strong> Each bag's leaf hash is recomputed and checked against the sealed MCM root at OEM intake</li>
-          <li><strong>Hash Mismatch → Counterfeit Alert:</strong> Any tampered bag invalidates its hash → immediate CDSCO CRITICAL alert</li>
-          <li><strong>CDSCO Witness Gate:</strong> Denaturing MUST be physically witnessed by a CDSCO officer — cannot be self-certified</li>
-          <li><strong>Status Lock:</strong> CONDITION_DENATURED_CONDEMNED → cannot be re-sold or re-entered at any POS counter</li>
-        </ul>
-      </div>
     </div>
   )
 }

@@ -24,6 +24,7 @@ interface SharedState {
   addFraudAlert: (alert: FraudAlert) => void;
   addNotification: (notif: Notification) => void;
   markNotificationRead: (id: string) => void;
+  clearNotifications: () => void;
   
   addReturn: (req: ReturnRequest) => void;
   updateReturn: (returnId: string, updates: Partial<ReturnRequest>) => void;
@@ -100,6 +101,7 @@ export const useSharedStore = create<SharedState>()(
       markNotificationRead: (id) => set((state) => ({
         notifications: state.notifications.map(n => n.id === id ? { ...n, read: true } : n)
       })),
+      clearNotifications: () => set({ notifications: [] }),
       
       addReturn: (req) => set((state) => ({ returns: [req, ...state.returns] })),
       updateReturn: (returnId, updates) => set((state) => ({
@@ -136,14 +138,27 @@ export const useSharedStore = create<SharedState>()(
       })),
 
       seedIfEmpty: () => {
+        const DUMMY_MOCK_IDS = new Set([
+          'mfr-002', 'mfr-003', 'mfr-004', 
+          'dist-002', 'dist-003', 'dist-004', 
+          'ret-002', 'ret-003', 'ret-004', 'ret-005', 
+          'wst-002', 'wst-003'
+        ]);
+
         set((state) => {
           const updates: Partial<SharedState> = {};
           if (!state.batches || state.batches.length === 0) {
             updates.batches = SEED_BATCHES;
           }
-          if (!state.organizations || state.organizations.length === 0) {
+          const existing = state.organizations || [];
+          const cleaned = existing.filter(o => !DUMMY_MOCK_IDS.has(o.id));
+          if (cleaned.length === 0) {
             updates.organizations = INITIAL_ORGANIZATIONS;
+          } else if (cleaned.length !== existing.length) {
+            updates.organizations = cleaned;
           }
+          // Remove old mock notification history
+          updates.notifications = [];
           return updates;
         });
       }

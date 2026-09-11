@@ -44,53 +44,49 @@ export function DistributorDashboard() {
 
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card className="shadow-sm border-gray-200">
+        <Card className="shadow-xs border-gray-200">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-gray-500">Pending Inbound Returns</CardTitle>
             <Truck className="w-4 h-4 text-blue-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">{pendingReturns.length}</div>
-            <p className="text-xs text-gray-400 mt-1">Awaiting physical handover</p>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm border-gray-200">
+        <Card className="shadow-xs border-gray-200">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-gray-500">Discrepancy Alerts</CardTitle>
             <AlertTriangle className="w-4 h-4 text-red-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">{discrepancyAlerts.length}</div>
-            <p className="text-xs text-red-500 font-medium mt-1">Quantity/Seal mismatch</p>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm border-gray-200">
+        <Card className="shadow-xs border-gray-200">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-gray-500">Reconciled & Accepted</CardTitle>
             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-emerald-600">{processedReturns.length}</div>
-            <p className="text-xs text-gray-400 mt-1">Ready for manufacturer dispatch</p>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm border-gray-200">
+        <Card className="shadow-xs border-gray-200">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Ledger Audit Sync</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-500">Verified Consignments</CardTitle>
             <ShieldCheck className="w-4 h-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-emerald-700">100%</div>
-            <p className="text-xs text-emerald-600 font-medium mt-1">Hyperledger Fabric synced</p>
+            <div className="text-2xl font-bold text-emerald-700">{processedReturns.length + pendingReturns.length}</div>
           </CardContent>
         </Card>
       </div>
 
       {/* Pending Action Table */}
-      <Card className="shadow-sm border-gray-200">
+      <Card className="shadow-xs border-gray-200">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg font-bold text-gray-900">
             Recent Return Shipments
@@ -99,7 +95,7 @@ export function DistributorDashboard() {
             variant="ghost" 
             size="sm" 
             onClick={() => navigate("/distributor/returns")}
-            className="text-xs text-emerald-700"
+            className="text-xs text-emerald-700 hover:text-emerald-800 cursor-pointer"
           >
             View All Returns <ArrowRight className="w-3.5 h-3.5 ml-1" />
           </Button>
@@ -118,24 +114,33 @@ export function DistributorDashboard() {
             </TableHeader>
             <TableBody>
               {returns.slice(0, 5).map((req) => (
-                <TableRow key={req.returnId} className="hover:bg-gray-50">
-                  <TableCell className="font-mono font-medium text-xs">{req.returnId}</TableCell>
+                <TableRow key={req.returnId} className="hover:bg-gray-50 transition-colors">
+                  <TableCell className="font-mono font-medium text-xs text-gray-900">{req.returnId}</TableCell>
                   <TableCell>
-                    <div className="font-medium text-sm">{req.productName}</div>
-                    <div className="text-xs font-mono text-gray-500">Batch: {req.batchNumber}</div>
+                    <div className="font-medium text-sm text-gray-900">{req.productName}</div>
+                    <div className="text-xs font-mono text-gray-500 mt-0.5">Batch: {req.batchNumber}</div>
                   </TableCell>
                   <TableCell className="text-sm text-gray-700">{req.initiatedBy}</TableCell>
-                  <TableCell className="font-semibold text-sm">{req.requestedQuantity} STRIPS</TableCell>
+                  <TableCell className="font-semibold text-sm font-mono text-gray-900">{req.requestedQuantity} STRIPS</TableCell>
                   <TableCell><StatusBadge status={req.status as any} /></TableCell>
                   <TableCell className="text-right">
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => navigate("/distributor/returns")}
-                      className="text-xs border-emerald-300 text-emerald-700 hover:bg-emerald-50"
-                    >
-                      Process
-                    </Button>
+                    <div className="flex items-center justify-end gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => navigate(`/passport/${req.batchId || req.batchNumber}`)}
+                        className="text-xs border-gray-200 text-gray-700 hover:bg-gray-100 cursor-pointer"
+                      >
+                        Passport
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        onClick={() => navigate("/distributor/returns")}
+                        className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+                      >
+                        Process
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

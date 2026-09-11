@@ -1,16 +1,44 @@
+import { useState, useEffect, useRef } from "react"
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom"
 import { useAuthStore } from "@/store/useAuthStore"
 import { useSharedStore } from "@/store/useSharedStore"
-import { LayoutDashboard, Package, AlertTriangle, FileText, LogOut, Activity, ShieldAlert, ShieldCheck, Bell, GitBranch, ScanLine, Truck, Flame, Building2, Plus } from "lucide-react"
+import { runAutomatedExpiryCheck } from "@/utils/expirySentinel"
+import { LayoutDashboard, Package, AlertTriangle, FileText, LogOut, Activity, ShieldAlert, ShieldCheck, Bell, GitBranch, ScanLine, Truck, Flame, Building2, Plus, CheckCheck, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export function DashboardLayout() {
   const { user, loginUser, logout } = useAuthStore()
   const notifications = useSharedStore(state => state.notifications)
-  const unreadCount = notifications.filter(n => !n.read).length
+  const markNotificationRead = useSharedStore(state => state.markNotificationRead)
+  const clearNotifications = useSharedStore(state => state.clearNotifications)
+  const [showNotifications, setShowNotifications] = useState(false)
+  const notifRef = useRef<HTMLDivElement>(null)
+
+  // Run automated 60-day expiry check and auto-return generation
+  useEffect(() => {
+    runAutomatedExpiryCheck()
+  }, [])
+
+  // Filter notifications for current user's role
+  const roleNotifications = notifications.filter(n => {
+    if (!n.targetRole) return true;
+    return n.targetRole === user?.role;
+  })
+  const unreadCount = roleNotifications.filter(n => !n.read).length
   const navigate = useNavigate()
   const location = useLocation()
+
+  // Close notifications on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setShowNotifications(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
 
   if (!user) return null
 
@@ -110,7 +138,7 @@ export function DashboardLayout() {
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 rounded-lg transition-colors shadow-sm"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>+ New Organization</span>
+              <span>New Organization</span>
             </Link>
           </div>
 
@@ -131,14 +159,91 @@ export function DashboardLayout() {
               </Select>
             </div>
             
-            <button className="relative p-2 text-gray-400 hover:text-gray-500 transition-colors">
-              <Bell className="w-5 h-5" />
-              {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white animate-in zoom-in">
-                  {unreadCount}
-                </span>
+            <div className="relative" ref={notifRef}>
+              <button 
+                onClick={() => setShowNotifications(prev => !prev)}
+                className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                title="System & Regulatory Notifications"
+              >
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white animate-in zoom-in">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Notification Popover */}
+              {showNotifications && (
+                <div className="absolute right-0 mt-2 w-96 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="p-3.5 bg-gradient-to-r from-slate-900 to-slate-800 text-white flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Bell className="w-4 h-4 text-emerald-400" />
+                      <span className="text-xs font-bold uppercase tracking-wider">CDSCO & System Alerts</span>
+                      {unreadCount > 0 && (
+                        <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+                          {unreadCount} New
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {unreadCount > 0 && (
+                        <button 
+                          onClick={() => {
+                            roleNotifications.forEach(n => markNotificationRead(n.id))
+                          }}
+                          className="text-[10px] text-slate-300 hover:text-white flex items-center gap-1 hover:underline cursor-pointer"
+                        >
+                          <CheckCheck className="w-3 h-3 text-emerald-400" />
+                          Mark read
+                        </button>
+                      )}
+                      {roleNotifications.length > 0 && (
+                        <button 
+                          onClick={() => clearNotifications()}
+                          className="text-[10px] text-slate-300 hover:text-red-300 flex items-center gap-1 hover:underline cursor-pointer"
+                          title="Remove all notification history"
+                        >
+                          <Trash2 className="w-3 h-3 text-red-400" />
+                          Clear history
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="max-h-80 overflow-y-auto divide-y divide-gray-100">
+                    {roleNotifications.length === 0 ? (
+                      <div className="p-6 text-center text-xs text-gray-400">
+                        No active alerts or notifications.
+                      </div>
+                    ) : (
+                      roleNotifications.map((n) => (
+                        <div 
+                          key={n.id} 
+                          onClick={() => markNotificationRead(n.id)}
+                          className={`p-3 text-xs transition-colors cursor-pointer hover:bg-gray-50 ${!n.read ? 'bg-amber-50/40' : ''}`}
+                        >
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                              n.severity === "CRITICAL" ? "bg-red-100 text-red-700 border border-red-200" :
+                              n.severity === "WARNING" ? "bg-amber-100 text-amber-800 border border-amber-200" :
+                              "bg-blue-100 text-blue-800 border border-blue-200"
+                            }`}>
+                              {n.type.replace(/_/g, " ")}
+                            </span>
+                            <span className="text-[10px] text-gray-400">
+                              {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                          <p className="font-bold text-gray-900 mb-0.5">{n.title}</p>
+                          <p className="text-gray-600 leading-relaxed text-[11px]">{n.message}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
               )}
-            </button>
+            </div>
           </div>
         </header>
         

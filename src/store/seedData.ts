@@ -25,12 +25,39 @@ export const SEED_BATCHES: BatchPassport[] = [
     riskScore: 5,
     timeline: [
       {
-        eventId: "EVT-101",
+        eventId: "EVT-101-A",
         eventType: "BATCH_MANUFACTURED",
-        status: "ACTIVE",
+        status: "COMPLETED",
         timestamp: "2024-01-10T10:00:00Z",
         actor: "Sun Pharmaceutical Industries Ltd",
         location: "Ahmedabad, Gujarat",
+        quantity: 500,
+      },
+      {
+        eventId: "EVT-101-B",
+        eventType: "DISPATCHED_TO_DISTRIBUTOR",
+        status: "COMPLETED",
+        timestamp: "2024-01-12T14:30:00Z",
+        actor: "ABC Distributors Central Logistics",
+        location: "Mumbai Distribution Hub",
+        quantity: 500,
+      },
+      {
+        eventId: "EVT-101-C",
+        eventType: "STOCK_RECEIVED",
+        status: "ACTIVE",
+        timestamp: "2024-01-15T09:15:00Z",
+        actor: "Raj Pharmacy Jaipur Central",
+        location: "Jaipur Dispensary Dock",
+        quantity: 500,
+      },
+      {
+        eventId: "EVT-101-D",
+        eventType: "INTEGRITY_SCAN_VERIFIED",
+        status: "ACTIVE",
+        timestamp: "2024-01-15T11:45:00Z",
+        actor: "Raj Pharmacy Certified Pharmacist",
+        location: "Jaipur Front Counter",
         quantity: 500,
       },
     ],
@@ -59,7 +86,34 @@ export const SEED_BATCHES: BatchPassport[] = [
     riskScore: 45,
     timeline: [
       {
-        eventId: "EVT-102",
+        eventId: "EVT-102-A",
+        eventType: "BATCH_MANUFACTURED",
+        status: "COMPLETED",
+        timestamp: "2023-06-01T08:00:00Z",
+        actor: "PharmaCorp India Innovations",
+        location: "Vadodara Plant",
+        quantity: 300,
+      },
+      {
+        eventId: "EVT-102-B",
+        eventType: "DISPATCHED_TO_DISTRIBUTOR",
+        status: "COMPLETED",
+        timestamp: "2023-06-05T12:00:00Z",
+        actor: "ABC Distributors Central Logistics",
+        location: "Western Hub Depot",
+        quantity: 300,
+      },
+      {
+        eventId: "EVT-102-C",
+        eventType: "DELIVERED_TO_RETAILER",
+        status: "COMPLETED",
+        timestamp: "2023-06-10T16:20:00Z",
+        actor: "Raj Pharmacy Jaipur Central",
+        location: "Jaipur, Rajasthan",
+        quantity: 300,
+      },
+      {
+        eventId: "EVT-102-D",
         eventType: "EXPIRY_WARNING",
         status: "EXPIRING_SOON",
         timestamp: "2026-09-01T08:00:00Z",
@@ -93,12 +147,48 @@ export const SEED_BATCHES: BatchPassport[] = [
     riskScore: 78,
     timeline: [
       {
-        eventId: "EVT-103",
+        eventId: "EVT-103-A",
+        eventType: "BATCH_MANUFACTURED",
+        status: "COMPLETED",
+        timestamp: "2022-02-15T09:00:00Z",
+        actor: "MediLife Makers Private Limited",
+        location: "Baddi, Himachal Pradesh",
+        quantity: 200,
+      },
+      {
+        eventId: "EVT-103-B",
+        eventType: "DISPATCHED_TO_DISTRIBUTOR",
+        status: "COMPLETED",
+        timestamp: "2022-02-20T11:30:00Z",
+        actor: "ABC Distributors Central Logistics",
+        location: "Delhi Transit Hub",
+        quantity: 200,
+      },
+      {
+        eventId: "EVT-103-C",
+        eventType: "DELIVERED_TO_RETAILER",
+        status: "COMPLETED",
+        timestamp: "2022-02-25T14:00:00Z",
+        actor: "Raj Pharmacy Jaipur Central",
+        location: "Jaipur, Rajasthan",
+        quantity: 200,
+      },
+      {
+        eventId: "EVT-103-D",
         eventType: "BATCH_EXPIRED",
         status: "EXPIRED",
         timestamp: "2024-02-15T00:00:00Z",
         actor: "System Sentinel",
         location: "Jaipur, Rajasthan",
+        quantity: 80,
+      },
+      {
+        eventId: "EVT-103-E",
+        eventType: "RETURN_INITIATED",
+        status: "RETURN_INITIATED",
+        timestamp: "2024-02-16T10:15:00Z",
+        actor: "Raj Pharmacy Pharmacist",
+        location: "Jaipur Handoff Bay",
         quantity: 80,
       },
     ],
@@ -127,11 +217,29 @@ export const SEED_BATCHES: BatchPassport[] = [
     riskScore: 2,
     timeline: [
       {
-        eventId: "EVT-104",
+        eventId: "EVT-104-A",
+        eventType: "BATCH_MANUFACTURED",
+        status: "COMPLETED",
+        timestamp: "2024-03-01T10:00:00Z",
+        actor: "Cipla Therapeutics Labs",
+        location: "Goa Manufacturing Plant",
+        quantity: 350,
+      },
+      {
+        eventId: "EVT-104-B",
+        eventType: "DISPATCHED_TO_DISTRIBUTOR",
+        status: "COMPLETED",
+        timestamp: "2024-03-05T15:00:00Z",
+        actor: "ABC Distributors Central Logistics",
+        location: "Jaipur, Rajasthan",
+        quantity: 350,
+      },
+      {
+        eventId: "EVT-104-C",
         eventType: "STOCK_RECEIVED",
         status: "ACTIVE",
         timestamp: "2024-03-10T14:30:00Z",
-        actor: "ABC Distributors Central Logistics",
+        actor: "Raj Pharmacy Jaipur Central",
         location: "Jaipur, Rajasthan",
         quantity: 350,
       },
@@ -214,7 +322,7 @@ export const SEED_RETURNS: ReturnRequest[] = [];
 export const SEED_DESTRUCTIONS: DestructionCertificate[] = [];
 
 export const INITIAL_ORGANIZATIONS: OrganizationNode[] = [
-  // 1. Manufacturers (OEMs)
+  // 1. Manufacturer (OEM)
   {
     id: "mfr-001",
     name: "Sun Pharmaceutical Industries Ltd",
@@ -229,50 +337,8 @@ export const INITIAL_ORGANIZATIONS: OrganizationNode[] = [
     registeredDate: "2021-03-15",
     address: "Plot 12-14, GIDC Industrial Estate, Halol, Gujarat"
   },
-  {
-    id: "mfr-002",
-    name: "PharmaCorp India Innovations",
-    type: "MANUFACTURER",
-    licenseNumber: "MFG-MH-1001-4491",
-    city: "Mumbai",
-    state: "Maharashtra",
-    complianceScore: 98,
-    active: true,
-    contactEmail: "compliance@pharmacorp.com",
-    contactPhone: "+91 22 4190 2000",
-    registeredDate: "2020-08-10",
-    address: "Bandra Kurla Complex, CTS 420, Mumbai, MH"
-  },
-  {
-    id: "mfr-003",
-    name: "MediLife Makers Private Limited",
-    type: "MANUFACTURER",
-    licenseNumber: "MFG-MH-1002-8812",
-    city: "Pune",
-    state: "Maharashtra",
-    complianceScore: 95,
-    active: true,
-    contactEmail: "quality@medilife.com",
-    contactPhone: "+91 20 2740 5000",
-    registeredDate: "2022-01-20",
-    address: "MIDC Hinjewadi Phase-2, Pune, Maharashtra"
-  },
-  {
-    id: "mfr-004",
-    name: "Cipla Therapeutics Labs",
-    type: "MANUFACTURER",
-    licenseNumber: "MFG-KA-3310-1092",
-    city: "Bangalore",
-    state: "Karnataka",
-    complianceScore: 97,
-    active: true,
-    contactEmail: "nodal@cipla.com",
-    contactPhone: "+91 80 4010 3300",
-    registeredDate: "2021-11-05",
-    address: "Bommasandra Industrial Area, Hosur Road, Bangalore, KA"
-  },
 
-  // 2. Distributors (Logistics Hubs)
+  // 2. Distributor (Logistics Hub)
   {
     id: "dist-001",
     name: "ABC Distributors Central Logistics",
@@ -287,50 +353,8 @@ export const INITIAL_ORGANIZATIONS: OrganizationNode[] = [
     registeredDate: "2021-06-12",
     address: "Okhla Phase-III Industrial Area, New Delhi, DL"
   },
-  {
-    id: "dist-002",
-    name: "Regional Med Supply Logistics",
-    type: "DISTRIBUTOR",
-    licenseNumber: "DIST-KA-2002-9913",
-    city: "Bangalore",
-    state: "Karnataka",
-    complianceScore: 94,
-    active: true,
-    contactEmail: "supply@regionalmed.in",
-    contactPhone: "+91 80 2210 9988",
-    registeredDate: "2022-04-18",
-    address: "Yeshwanthpur Industrial Suburb, Bangalore, KA"
-  },
-  {
-    id: "dist-003",
-    name: "West Coast Pharma Hub",
-    type: "DISTRIBUTOR",
-    licenseNumber: "DIST-GJ-2003-4510",
-    city: "Ahmedabad",
-    state: "Gujarat",
-    complianceScore: 93,
-    active: true,
-    contactEmail: "dispatch@westcoastlog.com",
-    contactPhone: "+91 79 2658 9012",
-    registeredDate: "2021-09-25",
-    address: "Changodar Industrial Estate, Sanand Highway, Ahmedabad, GJ"
-  },
-  {
-    id: "dist-004",
-    name: "Apex Cold-Chain Logistics Hub",
-    type: "DISTRIBUTOR",
-    licenseNumber: "DIST-MH-4102-3312",
-    city: "Bhiwandi",
-    state: "Maharashtra",
-    complianceScore: 98,
-    active: true,
-    contactEmail: "compliance@apexcoldchain.com",
-    contactPhone: "+91 2522 667788",
-    registeredDate: "2023-02-14",
-    address: "Mankoli Logistics Park, Bhiwandi, Thane, MH"
-  },
 
-  // 3. Retailers (Pharmacies & Dispensing Nodes)
+  // 3. Retailer (Dispensing Pharmacy)
   {
     id: "ret-001",
     name: "Raj Pharmacy Jaipur Central",
@@ -345,64 +369,8 @@ export const INITIAL_ORGANIZATIONS: OrganizationNode[] = [
     registeredDate: "2022-05-10",
     address: "Shop 14, MI Road, Near Raj Mandir, Jaipur, RJ"
   },
-  {
-    id: "ret-002",
-    name: "City Pharmacy Chemist & Druggist",
-    type: "RETAILER",
-    licenseNumber: "RET-MH-3001-4421",
-    city: "Mumbai",
-    state: "Maharashtra",
-    complianceScore: 92,
-    active: true,
-    contactEmail: "charlie@citypharmacy.com",
-    contactPhone: "+91 22 2411 9922",
-    registeredDate: "2021-07-29",
-    address: "Shop 4, Dr. Ambedkar Road, Dadar East, Mumbai, MH"
-  },
-  {
-    id: "ret-003",
-    name: "HealthPlus Medicare Corner",
-    type: "RETAILER",
-    licenseNumber: "RET-MH-3002-1189",
-    city: "Pune",
-    state: "Maharashtra",
-    complianceScore: 91,
-    active: true,
-    contactEmail: "support@healthplus.com",
-    contactPhone: "+91 20 2567 4321",
-    registeredDate: "2022-10-04",
-    address: "FC Road, Shivajinagar, Pune, MH"
-  },
-  {
-    id: "ret-004",
-    name: "Corner Drugstore & Dispensary",
-    type: "RETAILER",
-    licenseNumber: "RET-DL-3003-8820",
-    city: "New Delhi",
-    state: "Delhi",
-    complianceScore: 94,
-    active: true,
-    contactEmail: "orders@cornerdrug.in",
-    contactPhone: "+91 11 4155 6789",
-    registeredDate: "2021-01-15",
-    address: "Connaught Place Block M, New Delhi, DL"
-  },
-  {
-    id: "ret-005",
-    name: "Apollo Pharmacy Super Centre",
-    type: "RETAILER",
-    licenseNumber: "RET-TN-5521-9031",
-    city: "Chennai",
-    state: "Tamil Nadu",
-    complianceScore: 99,
-    active: true,
-    contactEmail: "nodal@apollopharm.com",
-    contactPhone: "+91 44 2829 0200",
-    registeredDate: "2020-12-19",
-    address: "Greams Road, Thousand Lights, Chennai, TN"
-  },
 
-  // 4. Bio-Medical Waste Facilities (CBWTF Incinerator Plants)
+  // 4. Bio-Medical Waste Facility (CBWTF Incinerator Plant)
   {
     id: "wst-001",
     name: "EcoWaste Management CBWTF",
@@ -416,34 +384,6 @@ export const INITIAL_ORGANIZATIONS: OrganizationNode[] = [
     contactPhone: "+91 712 289 9000",
     registeredDate: "2020-03-01",
     address: "Butibori Industrial Area, Nagpur, Maharashtra (Kiln #1 & #2 Dual-Chamber)"
-  },
-  {
-    id: "wst-002",
-    name: "GreenEarth Bio-Incinerators Ltd",
-    type: "WASTE_FACILITY",
-    licenseNumber: "CBWTF-WST-8821-DL",
-    city: "Okhla",
-    state: "Delhi",
-    complianceScore: 97,
-    active: true,
-    contactEmail: "operations@greenearth-cbwtf.org",
-    contactPhone: "+91 11 2681 4455",
-    registeredDate: "2021-08-16",
-    address: "DDA Bio-Medical Waste Zone, Okhla Phase I, New Delhi, DL"
-  },
-  {
-    id: "wst-003",
-    name: "CleanCare Enviro Systems CBWTF",
-    type: "WASTE_FACILITY",
-    licenseNumber: "CBWTF-WST-9204-KA",
-    city: "Peenya",
-    state: "Karnataka",
-    complianceScore: 98,
-    active: true,
-    contactEmail: "incinerator@cleancareenviro.com",
-    contactPhone: "+91 80 2839 1234",
-    registeredDate: "2022-02-28",
-    address: "Peenya 2nd Stage, Bangalore, Karnataka (CPCB Auth #KA-BMW-2022-09)"
   }
 ];
 

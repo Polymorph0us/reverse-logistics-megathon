@@ -1,34 +1,17 @@
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { useSharedStore } from "@/store/useSharedStore"
-import { generateEWTN, logIncineration, getEWTNs, getDenaturedTags } from "@/api/mockApi"
-import type { ElectronicWasteTransferNote, DenaturedBatchTag } from "@/api/types"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { generateEWTN, logIncineration, getEWTNs, getDenaturedTags, getOrganizations } from "@/api/mockApi"
+import type { ElectronicWasteTransferNote, DenaturedBatchTag, OrganizationNode } from "@/api/types"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import {
   Truck, Flame, CheckCircle2, AlertTriangle, Loader2,
-  ClipboardList, Thermometer, FileText, RefreshCw,
+  ClipboardList, Thermometer, FileText, RefreshCw, ArrowLeft,
 } from "lucide-react"
-
-// ── CBWTF Facilities ──────────────────────────────────────────────────────────
-const FACILITIES = {
-  ECOWASTE: {
-    name: "EcoWaste Solutions CBWTF",
-    regNumber: "CBWTF-RAJ-2019-0042",
-    address: "Plot 14, RIICO Industrial Area Phase II, Jaipur, Rajasthan 302022",
-    category: "Class A — Incinerator + Autoclave",
-  },
-  GREENSHIELD: {
-    name: "GreenShield Incinerators Ltd",
-    regNumber: "CBWTF-MH-2017-0018",
-    address: "Survey No. 82/3, Ambernath MIDC, Thane, Maharashtra 421506",
-    category: "Class A — High-temperature Dual-Chamber",
-  },
-} as const
-
-type FacilityKey = keyof typeof FACILITIES
 
 function EWTNStatusBadge({ status }: { status: ElectronicWasteTransferNote["status"] }) {
   const map: Record<ElectronicWasteTransferNote["status"], string> = {
@@ -52,15 +35,17 @@ function EWTNStatusBadge({ status }: { status: ElectronicWasteTransferNote["stat
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export function CBWTFScheduler() {
+  const navigate = useNavigate()
   const { toast } = useToast()
   const incinerationLogs = useSharedStore(s => s.incinerationLogs)
 
+  const [wasteFacilities, setWasteFacilities] = useState<OrganizationNode[]>([])
   const [tags,  setTags]  = useState<DenaturedBatchTag[]>([])
   const [ewtns, setEwtns] = useState<ElectronicWasteTransferNote[]>([])
 
   // E-WTN form
   const [selectedTagId, setSelectedTagId]   = useState("")
-  const [facility,      setFacility]        = useState<FacilityKey>("ECOWASTE")
+  const [facility,      setFacility]        = useState<string>("ECOWASTE")
   const [vehicleNo,     setVehicleNo]       = useState("")
   const [driverName,    setDriverName]      = useState("")
   const [hazmatLicense, setHazmatLicense]   = useState("")
@@ -79,10 +64,16 @@ export function CBWTFScheduler() {
   useEffect(() => {
     getDenaturedTags().then(setTags)
     getEWTNs().then(setEwtns)
+    getOrganizations().then(orgs => {
+      const facilities = orgs.filter(o => o.type === "WASTE_FACILITY" && o.active !== false)
+      setWasteFacilities(facilities)
+      if (facilities.length > 0) {
+        setFacility(facilities[0].id)
+      }
+    })
   }, [generating, loggingIncin])
 
   const selectedTag = tags.find(t => t.tagId === selectedTagId)
-  const facilityInfo = FACILITIES[facility]
 
   const primTempNum = Number(primaryTemp)
   const secTempNum  = Number(secondaryTemp)
@@ -131,7 +122,7 @@ export function CBWTFScheduler() {
   // Auto-fill demo defaults
   const demoFill = () => {
     setVehicleNo("RJ-14-GA-9021"); setDriverName("Mahesh Kumar Sharma")
-    setHazmatLicense("HAZMAT-RJ-2023-00892")
+    setHazmatLicense("RJ-2023-00892")
     const now = new Date(); const end = new Date(now.getTime() + 4 * 3600000)
     setPickupStart(now.toISOString().slice(0, 16))
     setPickupEnd(end.toISOString().slice(0, 16))
@@ -148,43 +139,87 @@ export function CBWTFScheduler() {
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900 flex items-center gap-2">
-          <Truck className="w-8 h-8 text-emerald-600" />
-          CBWTF Pickup Scheduler &amp; Incineration Log
-        </h1>
-        <p className="text-gray-500 mt-1 text-sm">
-          Step 3 &amp; 4 of destruction pipeline — Generate E-WTN, schedule hazmat vehicle pickup, and record dual-chamber temperature log.
-        </p>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 flex items-center gap-2">
+            <Truck className="w-8 h-8 text-emerald-600" />
+            CBWTF Pickup Scheduler &amp; Incineration Log
+          </h1>
+          <p className="text-gray-500 mt-1">
+            Generate E-WTN, schedule hazmat vehicle pickup, and record dual-chamber temperature verification.
+          </p>
+        </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => navigate("/manufacturer/dashboard")}
+          className="border-gray-200 text-gray-700 hover:bg-gray-100 cursor-pointer self-start md:self-auto"
+        >
+          <ArrowLeft className="w-4 h-4 mr-1.5" />
+          Dashboard
+        </Button>
       </div>
 
       {/* KPIs */}
-      <div className="flex flex-wrap gap-3">
-        {[
-          { label: "Confirmed Denaturing Tags",  value: confirmedTags.length,                                 color: "bg-amber-50 border-amber-200 text-amber-800" },
-          { label: "E-WTNs Issued",              value: ewtns.length,                                         color: "bg-sky-50 border-sky-200 text-sky-800" },
-          { label: "Incineration Logs",          value: incinerationLogs.length,                              color: "bg-orange-50 border-orange-200 text-orange-800" },
-          { label: "Temp Logs Passed",           value: incinerationLogs.filter(l => l.passed).length,        color: "bg-emerald-50 border-emerald-200 text-emerald-700" },
-        ].map(s => (
-          <div key={s.label} className={`flex items-center gap-2 px-4 py-2 rounded-lg border font-semibold ${s.color}`}>
-            <span className="text-lg font-bold">{s.value}</span>
-            <span className="text-xs">{s.label}</span>
-          </div>
-        ))}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card className="shadow-xs border-gray-200">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-gray-500">Confirmed Tags</CardTitle>
+            <ClipboardList className="w-4 h-4 text-amber-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-gray-900">
+              {confirmedTags.length}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-xs border-gray-200">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-gray-500">E-WTNs Issued</CardTitle>
+            <FileText className="w-4 h-4 text-sky-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-sky-600">
+              {ewtns.length}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-xs border-gray-200">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-gray-500">Incineration Logs</CardTitle>
+            <Flame className="w-4 h-4 text-orange-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600">
+              {incinerationLogs.length}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-xs border-gray-200">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-gray-500">Passed Standards</CardTitle>
+            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-emerald-600">
+              {incinerationLogs.filter(l => l.passed).length}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
 
         {/* ══ STEP 3: E-WTN GENERATOR ════════════════════════════════════════ */}
-        <Card className="shadow-sm border-sky-200">
-          <CardHeader className="bg-sky-50/60 border-b border-sky-100">
+        <Card className="shadow-xs border-gray-200">
+          <CardHeader className="bg-sky-50/40 border-b border-sky-100 pb-3">
             <CardTitle className="text-base font-bold flex items-center gap-2 text-sky-900">
-              <ClipboardList className="w-4 h-4" /> Step 3 — Generate E-WTN
+              <ClipboardList className="w-4 h-4 text-sky-600" /> Step 3 — Generate E-WTN
             </CardTitle>
-            <CardDescription className="text-xs text-sky-700">
-              Electronic Waste Transfer Note connecting your facility to the authorized CBWTF incinerator.
-              Gate: Requires a <strong>confirmed denaturing tag</strong>.
-            </CardDescription>
           </CardHeader>
           <CardContent className="pt-5">
             <form onSubmit={handleGenerateEWTN} className="space-y-4">
@@ -218,25 +253,28 @@ export function CBWTFScheduler() {
               {/* CBWTF Facility */}
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-gray-600">Authorized CBWTF Facility</label>
-                <Select value={facility} onValueChange={v => setFacility(v as FacilityKey)}>
+                <Select value={facility} onValueChange={setFacility}>
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(FACILITIES).map(([key, f]) => (
-                      <SelectItem key={key} value={key}>
-                        {f.name} ({f.regNumber})
-                      </SelectItem>
-                    ))}
+                    {wasteFacilities.length === 0 ? (
+                      <SelectItem value="none" disabled>No registered waste facilities</SelectItem>
+                    ) : (
+                      wasteFacilities.map(f => (
+                        <SelectItem key={f.id} value={f.id}>
+                          {f.name} ({f.city} · Lic: {f.licenseNumber})
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
-                <div className="text-[10px] text-gray-400 pl-1">{facilityInfo.address} · {facilityInfo.category}</div>
               </div>
 
               {/* Vehicle & Driver */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-gray-600">Hazmat Vehicle No.</label>
+                  <label className="text-xs font-semibold text-gray-600">Vehicle No.</label>
                   <Input value={vehicleNo} onChange={e => setVehicleNo(e.target.value)}
                     placeholder="RJ-14-GA-9021" className="font-mono text-sm uppercase" required />
                 </div>
@@ -248,9 +286,9 @@ export function CBWTFScheduler() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-gray-600">Hazmat License No.</label>
+                <label className="text-xs font-semibold text-gray-600">License No.</label>
                 <Input value={hazmatLicense} onChange={e => setHazmatLicense(e.target.value)}
-                  placeholder="HAZMAT-RJ-2023-00892" className="font-mono text-sm uppercase" required />
+                  placeholder="RJ-2023-00892" className="font-mono text-sm uppercase" required />
               </div>
 
               {/* Pickup Window */}
@@ -275,15 +313,6 @@ export function CBWTFScheduler() {
                 </Button>
               </div>
 
-              <div className="p-3 bg-sky-50 border border-sky-200 rounded-md text-xs text-sky-800 space-y-1">
-                <div className="font-semibold">E-WTN Contents</div>
-                <ul className="list-disc list-inside space-y-0.5">
-                  <li>Facility: <strong>{facilityInfo.name}</strong> (CPCB Reg: {facilityInfo.regNumber})</li>
-                  <li>Waste Category: Category 4 — Expired/Condemned Pharmaceuticals (Schedule H/X)</li>
-                  {selectedTag && <li>Total Net Mass: <strong>{selectedTag.weightKg} kg</strong></li>}
-                </ul>
-              </div>
-
               <Button type="submit"
                 disabled={!selectedTagId || !vehicleNo || !driverName || !hazmatLicense || !pickupStart || !pickupEnd || generating}
                 className="w-full bg-sky-700 hover:bg-sky-800 text-white font-bold">
@@ -296,15 +325,11 @@ export function CBWTFScheduler() {
         </Card>
 
         {/* ══ STEP 4: INCINERATION TEMP LOG ══════════════════════════════════ */}
-        <Card className="shadow-sm border-orange-200">
-          <CardHeader className="bg-orange-50/60 border-b border-orange-100">
+        <Card className="shadow-xs border-gray-200">
+          <CardHeader className="bg-orange-50/40 border-b border-orange-100 pb-3">
             <CardTitle className="text-base font-bold flex items-center gap-2 text-orange-900">
-              <Thermometer className="w-4 h-4" /> Step 4 — Incineration Temperature Log
+              <Thermometer className="w-4 h-4 text-orange-600" /> Step 4 — Incineration Temperature Log
             </CardTitle>
-            <CardDescription className="text-xs text-orange-700">
-              CPCB dual-chamber standard: Primary ≥ <strong>850°C</strong>, Secondary ≥ <strong>1050°C</strong>.
-              Certificate issuance is blocked if temperature is below standard.
-            </CardDescription>
           </CardHeader>
           <CardContent className="pt-5">
             <form onSubmit={handleLogIncineration} className="space-y-4">
@@ -448,17 +473,6 @@ export function CBWTFScheduler() {
           </CardContent>
         </Card>
       )}
-
-      {/* Info panel */}
-      <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800 space-y-1">
-        <div className="font-bold flex items-center gap-1.5"><Flame className="w-3.5 h-3.5 text-orange-500" /> CPCB / CDSCO Incineration Standard</div>
-        <ul className="list-disc list-inside space-y-0.5 text-emerald-700">
-          <li>Dual-chamber incinerator: Primary combustion ≥ 850°C, Secondary combustion ≥ 1050°C (Bio-Medical Waste Rules 2016)</li>
-          <li>Ash must be tested for heavy metals and disposed via authorized ash landfill (Ash Disposal Waybill required)</li>
-          <li>E-WTN is an official document — vehicle number, driver hazmat license, and facility CPCB reg number are mandatory</li>
-          <li>Volume Lock: Certificate can only be issued for the physically denatured quantity — phantom write-offs are mathematically impossible</li>
-        </ul>
-      </div>
     </div>
   )
 }

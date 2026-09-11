@@ -38,11 +38,11 @@ export function Login() {
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="RETAILER">Retailer (Raj Pharmacy)</SelectItem>
-                  <SelectItem value="DISTRIBUTOR">Distributor (ABC Dist.)</SelectItem>
-                  <SelectItem value="MANUFACTURER">Manufacturer (Sun Pharma)</SelectItem>
-                  <SelectItem value="WASTE_FACILITY">Waste Facility (EcoWaste)</SelectItem>
-                  <SelectItem value="REGULATOR">Regulator (CDSCO)</SelectItem>
+                  <SelectItem value="RETAILER">Retailer</SelectItem>
+                  <SelectItem value="DISTRIBUTOR">Distributor</SelectItem>
+                  <SelectItem value="MANUFACTURER">Manufacturer</SelectItem>
+                  <SelectItem value="WASTE_FACILITY">Waste Facility</SelectItem>
+                  <SelectItem value="REGULATOR">Regulator</SelectItem>
                 </SelectContent>
               </Select>
             </div>

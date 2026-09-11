@@ -91,6 +91,7 @@ export interface ReturnRequest {
   distributorWeightGrams?: number;
   weightDeltaPercent?: number;
   hashTxId?: string;
+  distributor?: string;
   // Layer 3: Master Crate Consolidation
   masterConsignmentId?: string;  // e.g. MCM-2025-IND-8910
   merkleLeafHash?: string;       // SHA-256 leaf hash for this return in the Merkle tree
@@ -141,12 +142,15 @@ export interface RegulatorDashboard {
 
 export interface Notification {
   id: string;
-  type: "EXPIRY_ALERT" | "RETURN_CREATED" | "RETURN_RECEIVED" | "QUANTITY_DISCREPANCY" | "DESTRUCTION_SCHEDULED" | "DESTRUCTION_COMPLETED" | "FRAUD_ALERT" | "BATCH_REENTRY";
+  type: "EXPIRY_ALERT" | "RETURN_CREATED" | "RETURN_RECEIVED" | "QUANTITY_DISCREPANCY" | "DESTRUCTION_SCHEDULED" | "DESTRUCTION_COMPLETED" | "FRAUD_ALERT" | "BATCH_REENTRY" | "AUTO_RETURN_GENERATED" | "EXPIRY_WARNING" | string;
   title: string;
   message: string;
   severity: "INFO" | "WARNING" | "CRITICAL";
   read: boolean;
   createdAt: string;
+  batchId?: string;
+  batchNumber?: string;
+  targetRole?: "RETAILER" | "DISTRIBUTOR" | "MANUFACTURER" | "WASTE_FACILITY" | "REGULATOR";
 }
 
 export interface BlockchainProof {

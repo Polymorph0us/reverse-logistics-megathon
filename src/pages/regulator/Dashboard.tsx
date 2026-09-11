@@ -3,7 +3,10 @@ import { useNavigate } from "react-router-dom"
 import { getRegulatorDashboard } from "@/api/mockApi"
 import type { RegulatorDashboard } from "@/api/types"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertTriangle, Package, ShieldAlert, BarChart3, TrendingUp, Building2, Eye, ArrowUpRight } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { StatusBadge } from "@/components/shared/StatusBadge"
+import { AlertTriangle, Package, ShieldAlert, BarChart3, Building2, Eye, ArrowUpRight, ShieldCheck, ArrowRight } from "lucide-react"
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, Legend, Cell } from "recharts"
 import { useSharedStore } from "@/store/useSharedStore"
 
@@ -43,35 +46,39 @@ export function RegulatorDashboardView() {
   ]
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 animate-in fade-in duration-300">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Regulator Overview</h1>
-          <p className="text-gray-500 mt-1">National Tracking Network</p>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 flex items-center gap-2">
+            <ShieldCheck className="w-8 h-8 text-emerald-700" />
+            CDSCO Regulatory Sentinel
+          </h1>
+          <p className="text-gray-500 mt-1">
+            National pharmaceutical reverse tracking, cryptographic custody verification, and fraud anomaly detection.
+          </p>
         </div>
-        <div className="flex items-center text-sm font-medium text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-          <Eye className="w-4 h-4 mr-2 animate-pulse" />
+        <div className="flex items-center text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200 self-start md:self-auto">
+          <Eye className="w-3.5 h-3.5 mr-1.5 animate-pulse text-emerald-600" />
           Live Monitoring Active
         </div>
       </div>
 
+      {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
+        <Card className="shadow-xs border-gray-200">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium text-gray-500">Tracked Batches</CardTitle>
-            <Package className="h-4 w-4 text-gray-400" />
+            <Package className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{kpis.totalTrackedBatches.toLocaleString()}</div>
-            <p className="text-xs text-green-500 flex items-center mt-1">
-              <TrendingUp className="w-3 h-3 mr-1" /> +12% from last month
-            </p>
+            <div className="text-2xl font-bold text-gray-900">{kpis.totalTrackedBatches.toLocaleString()}</div>
           </CardContent>
         </Card>
         
         <Card 
           onClick={() => navigate("/regulator/organizations")}
-          className="cursor-pointer hover:shadow-md transition-all hover:border-emerald-300 group"
+          className="cursor-pointer hover:shadow-md transition-all hover:border-emerald-300 group shadow-xs border-gray-200"
         >
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium text-gray-500 group-hover:text-emerald-700 transition-colors">
@@ -86,48 +93,40 @@ export function RegulatorDashboardView() {
             <div className="text-2xl font-bold text-gray-900 group-hover:text-emerald-700 transition-colors">
               {organizations.length > 0 ? organizations.length : 14}
             </div>
-            <p className="text-xs text-gray-500 mt-1 flex items-center justify-between">
-              <span>Mfr · Dist · Ret · CBWTF</span>
-              <span className="text-emerald-600 font-medium group-hover:underline">Manage & Onboard →</span>
-            </p>
           </CardContent>
         </Card>
 
-        <Card className="border-red-100 bg-red-50/30">
+        <Card className="border-red-200 bg-red-50/20 shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium text-red-600">Total Fraud Alerts</CardTitle>
             <ShieldAlert className="h-4 w-4 text-red-500 animate-pulse" />
           </CardHeader>
           <CardContent>
-            {/* Animate key to force count up re-render if it changes */}
-            <div key={liveAlerts.length} className="text-2xl font-bold text-red-700 animate-in slide-in-from-bottom-2">
+            <div className="text-2xl font-bold text-red-700">
               {liveAlerts.length}
             </div>
-            <p className="text-xs text-red-500 mt-1">
-              {liveAlerts.filter(a => a.severity === 'CRITICAL').length} CRITICAL
-            </p>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="shadow-xs border-gray-200">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium text-gray-500">Destroyed</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-gray-400" />
+            <CardTitle className="text-sm font-medium text-gray-500">Certified Destroyed</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div key={destroyedCount} className="text-2xl font-bold text-orange-600 animate-in slide-in-from-bottom-2">
+            <div className="text-2xl font-bold text-orange-600">
               {destroyedCount}
             </div>
-            <p className="text-xs text-gray-500 mt-1">Total batches securely destroyed</p>
           </CardContent>
         </Card>
       </div>
 
+      {/* Chart Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
+        <Card className="shadow-xs border-gray-200">
           <CardHeader>
-            <CardTitle className="flex items-center text-gray-700">
-              <BarChart3 className="w-5 h-5 mr-2" />
+            <CardTitle className="flex items-center text-gray-900 text-base font-bold">
+              <BarChart3 className="w-4 h-4 mr-2 text-emerald-600" />
               Incidents & Destructions (7 Days)
             </CardTitle>
           </CardHeader>
@@ -160,10 +159,10 @@ export function RegulatorDashboardView() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="shadow-xs border-gray-200">
           <CardHeader>
-            <CardTitle className="flex items-center text-gray-700">
-              <ShieldAlert className="w-5 h-5 mr-2" />
+            <CardTitle className="flex items-center text-gray-900 text-base font-bold">
+              <ShieldAlert className="w-4 h-4 mr-2 text-blue-600" />
               Organization Compliance Scores
             </CardTitle>
           </CardHeader>
@@ -189,6 +188,76 @@ export function RegulatorDashboardView() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Flagged Batches & National Investigation Stream Table */}
+      <Card className="shadow-xs border-gray-200">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <ShieldAlert className="w-5 h-5 text-red-600" />
+            National Monitored Batches &amp; Sentinel Alerts
+          </CardTitle>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => navigate("/regulator/alerts")}
+            className="text-xs text-emerald-700 hover:text-emerald-800 cursor-pointer"
+          >
+            All Alerts ({liveAlerts.length}) <ArrowRight className="w-3.5 h-3.5 ml-1" />
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Batch Identifier</TableHead>
+                <TableHead>Product Formulation</TableHead>
+                <TableHead>Holder Organization</TableHead>
+                <TableHead>Current Status</TableHead>
+                <TableHead className="text-right">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {batches.slice(0, 5).map(batch => (
+                <TableRow key={batch.batchId} className="hover:bg-gray-50 transition-colors">
+                  <TableCell>
+                    <div className="font-mono text-xs font-bold text-gray-900">
+                      {batch.batchNumber}
+                    </div>
+                    <div className="text-[10px] text-gray-400 font-mono mt-0.5">{batch.batchId}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="font-semibold text-sm text-gray-900">{batch.product.name}</div>
+                    <div className="text-xs text-gray-500">{batch.product.genericName}</div>
+                  </TableCell>
+                  <TableCell className="text-sm text-gray-700">{batch.currentOwner.organizationName}</TableCell>
+                  <TableCell>
+                    <StatusBadge status={batch.currentStatus} />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => navigate(`/passport/${batch.batchId}`)}
+                        className="text-xs border-gray-200 text-gray-700 hover:bg-gray-100 cursor-pointer"
+                      >
+                        Inspect Passport
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        onClick={() => navigate("/regulator/alerts")}
+                        className="text-xs bg-slate-900 hover:bg-slate-800 text-white cursor-pointer"
+                      >
+                        Alerts
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   )
 }
