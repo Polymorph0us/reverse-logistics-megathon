@@ -67,7 +67,7 @@ ReversePass is a monorepo containing a modern SPA frontend and a robust Java mic
    ```
    *Access the web app at **http://localhost:5173***.
 
-## 🚀 Usage / Workflow
+##  Usage / Workflow
 
 ### Frontend Dashboards
 Navigate to `http://localhost:5173` and log in using one of the pre-seeded demo accounts (Password for all: `password123`):
