@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react"
+import { useSearchParams } from "react-router-dom"
 import { useSharedStore } from "@/store/useSharedStore"
 import { getOrganizations, createOrganization } from "@/api/mockApi"
 import type { OrganizationNode, SectorType } from "@/api/types"
@@ -46,6 +47,7 @@ export function OrganizationsDirectory() {
   const sharedOrgs = useSharedStore(state => state.organizations)
   const [orgs, setOrgs] = useState<OrganizationNode[]>([])
   const [loading, setLoading] = useState(true)
+  const [searchParams] = useSearchParams()
   const [activeTab, setActiveTab] = useState<"ALL" | SectorType>("ALL")
   const [searchQuery, setSearchQuery] = useState("")
   const [filterState, setFilterState] = useState<string>("ALL")
@@ -67,6 +69,24 @@ export function OrganizationsDirectory() {
     contactPhone: "",
     complianceScore: 98,
   })
+
+  // Open onboard modal pre-configured for a given sector
+  const openOnboardForSector = (sector: SectorType) => {
+    setFormData(prev => ({ ...prev, type: sector }));
+    setIsOnboardOpen(true);
+  };
+
+  // Check URL query parameters on load
+  useEffect(() => {
+    if (searchParams.get("onboard") === "true") {
+      const s = searchParams.get("sector");
+      if (s && ["MANUFACTURER", "DISTRIBUTOR", "RETAILER", "WASTE_FACILITY"].includes(s.toUpperCase())) {
+        setFormData(prev => ({ ...prev, type: s.toUpperCase() as SectorType }));
+        setActiveTab(s.toUpperCase() as SectorType);
+      }
+      setIsOnboardOpen(true);
+    }
+  }, [searchParams]);
 
   // Load from API / Shared Store
   const loadData = async () => {
@@ -406,6 +426,57 @@ export function OrganizationsDirectory() {
               <Flame className="w-4 h-4 mr-1.5" />
               CBWTF Incinerators ({sectorCounts.WASTE_FACILITY})
             </Button>
+
+            {activeTab === "ALL" && (
+              <Button
+                size="sm"
+                onClick={() => setIsOnboardOpen(true)}
+                className="ml-auto bg-slate-900 hover:bg-slate-800 text-white font-medium shadow-sm"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" />
+                + Onboard Any Sector
+              </Button>
+            )}
+            {activeTab === "MANUFACTURER" && (
+              <Button
+                size="sm"
+                onClick={() => openOnboardForSector("MANUFACTURER")}
+                className="ml-auto bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" />
+                + New Manufacturer (OEM)
+              </Button>
+            )}
+            {activeTab === "DISTRIBUTOR" && (
+              <Button
+                size="sm"
+                onClick={() => openOnboardForSector("DISTRIBUTOR")}
+                className="ml-auto bg-purple-600 hover:bg-purple-700 text-white font-medium shadow-sm"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" />
+                + New Distributor Hub
+              </Button>
+            )}
+            {activeTab === "RETAILER" && (
+              <Button
+                size="sm"
+                onClick={() => openOnboardForSector("RETAILER")}
+                className="ml-auto bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-sm"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" />
+                + New Retail Chemist
+              </Button>
+            )}
+            {activeTab === "WASTE_FACILITY" && (
+              <Button
+                size="sm"
+                onClick={() => openOnboardForSector("WASTE_FACILITY")}
+                className="ml-auto bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-sm"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" />
+                + New CBWTF Facility
+              </Button>
+            )}
           </div>
 
           {/* Search & State Filter controls */}

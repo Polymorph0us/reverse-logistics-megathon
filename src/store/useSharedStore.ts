@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { BatchPassport, FraudAlert, Notification, ReturnRequest, DestructionCertificate, TimelineEvent, MasterConsignment, DenaturedBatchTag, ElectronicWasteTransferNote, IncinerationLog, FinalIncinerationRecord, OrganizationNode } from '@/api/types';
-import { INITIAL_ORGANIZATIONS } from './seedData';
+import { INITIAL_ORGANIZATIONS, SEED_BATCHES } from './seedData';
 
 interface SharedState {
   batches: BatchPassport[];
@@ -137,10 +137,14 @@ export const useSharedStore = create<SharedState>()(
 
       seedIfEmpty: () => {
         set((state) => {
-          if (!state.organizations || state.organizations.length === 0) {
-            return { organizations: INITIAL_ORGANIZATIONS };
+          const updates: Partial<SharedState> = {};
+          if (!state.batches || state.batches.length === 0) {
+            updates.batches = SEED_BATCHES;
           }
-          return {};
+          if (!state.organizations || state.organizations.length === 0) {
+            updates.organizations = INITIAL_ORGANIZATIONS;
+          }
+          return updates;
         });
       }
     }),
