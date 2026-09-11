@@ -1,7 +1,7 @@
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom"
 import { useAuthStore } from "@/store/useAuthStore"
 import { useSharedStore } from "@/store/useSharedStore"
-import { LayoutDashboard, Package, AlertTriangle, FileText, LogOut, Activity, ShieldAlert, ShieldCheck, Bell, GitBranch, ScanLine, Truck, Flame, Building2 } from "lucide-react"
+import { LayoutDashboard, Package, AlertTriangle, FileText, LogOut, Activity, ShieldAlert, ShieldCheck, Bell, GitBranch, ScanLine, Truck, Flame, Building2, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
@@ -103,7 +103,18 @@ export function DashboardLayout() {
       </div>
 
       <main className="flex-1 overflow-hidden flex flex-col bg-gray-50/50">
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-end px-8 space-x-6">
+        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8">
+          <div>
+            <Link 
+              to="/organizations?onboard=true" 
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 rounded-lg transition-colors shadow-sm"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>+ New Organization</span>
+            </Link>
+          </div>
+
+          <div className="flex items-center space-x-6">
             <div className="flex items-center space-x-2">
               <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Quick Switch:</span>
               <Select value={user.role} onValueChange={(v) => loginUser(v as any)}>
@@ -128,6 +139,7 @@ export function DashboardLayout() {
                 </span>
               )}
             </button>
+          </div>
         </header>
         
         <div className="flex-1 overflow-auto p-8">
