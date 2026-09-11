@@ -1,15 +1,17 @@
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { useSharedStore } from "@/store/useSharedStore"
 import { runKilnIncineration, getFinalIncinerationRecords, getEWTNs } from "@/api/mockApi"
 import type { FinalIncinerationRecord, ElectronicWasteTransferNote, KilnTelemetryReading } from "@/api/types"
+import { RealQRCode } from "@/components/shared/RealQRCode"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import {
-  Flame, Weight, MapPin, ShieldCheck, QrCode, Loader2,
-  CheckCircle2, AlertTriangle, XCircle, Thermometer, FileText, Leaf,
+  Flame, MapPin, ShieldCheck, QrCode, Loader2,
+  CheckCircle2, AlertTriangle, XCircle, FileText, ArrowLeft,
 } from "lucide-react"
 
 // ── Burn Phase Config ─────────────────────────────────────────────────────────
@@ -240,6 +242,25 @@ function FIRCertificate({ rec }: { rec: FinalIncinerationRecord }) {
           </div>
         </div>
 
+        {/* Verification QR */}
+        <div className="flex items-center gap-5 p-4 border border-gray-200 rounded-xl bg-gray-50 mt-6">
+          <div className="shrink-0 bg-white p-1 rounded-lg border border-gray-300 shadow-xs">
+            <RealQRCode 
+              value={`${window.location.origin}/verify?cert=${rec.certificateId}&record=${rec.recordId}&hash=${rec.certificateHash}`} 
+              size={84} 
+            />
+          </div>
+          <div className="min-w-0">
+            <div className="text-xs font-bold text-gray-800">Publicly Verifiable QR Code</div>
+            <div className="text-[10px] text-gray-500 mt-0.5">
+              Scan with any mobile device or regulatory terminal to authenticate this Final Incineration Record.
+            </div>
+            <div className="text-[9px] font-mono text-emerald-700 truncate mt-1">
+              {window.location.origin}/verify?cert={rec.certificateId}&amp;hash={rec.certificateHash.substring(0, 16)}…
+            </div>
+          </div>
+        </div>
+
         <div className="mt-6 text-center text-[10px] text-gray-400 border-t pt-4">
           This record is auto-compiled by the RxTrack Platform · SHA-256 anchored · Publicly verifiable · Cannot be forged or backdated.
         </div>
@@ -250,6 +271,7 @@ function FIRCertificate({ rec }: { rec: FinalIncinerationRecord }) {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export function KilnIncineration() {
+  const navigate = useNavigate()
   const { toast } = useToast()
   const finalRecords = useSharedStore(s => s.finalIncinerationRecords)
   const masterConsignments = useSharedStore(s => s.masterConsignments)
@@ -281,40 +303,62 @@ export function KilnIncineration() {
     if (selectedEwtn && !hopperWeight) {
       setHopperWeight(selectedEwtn.totalNetMassKg.toFixed(1))
     }
-  }, [selectedEwtn])
+  }, [selectedEwtn, hopperWeight])
 
   // Find MCMs matching the selected E-WTN batch
   const matchingMcms = masterConsignments.filter(m =>
-    selectedEwtn ? m.status === "BLIND_SCAN_PASS" : false
+    selectedEwtn ? m.status === "BLIND_SCAN_PASS" : true
   )
 
   const demoFill = () => {
     setSupervisorId("CBWTF-SUP-2025-0081")
     setPlantMgrId("CBWTF-PM-2025-0012")
     setPlantMgrName("Suresh Agarwal")
-    setAshWaybill(`ASH-WB-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`)
+    setAshWaybill("ASH-WB-2025-0042")
+    if (readyEwtns[0]) {
+      setSelectedEwtnId(readyEwtns[0].ewtnId)
+    }
   }
 
   const handleRun = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!selectedEwtnId || !selectedMcmId || !hopperWeight || !supervisorId || !plantMgrId || !plantMgrName || !ashWaybill) return
+    if (!selectedEwtnId || !selectedMcmId || !hopperWeight || !supervisorId || !plantMgrId || !plantMgrName || !ashWaybill) {
+      toast({ title: "Incomplete fields", description: "Please complete all feeder scan and plant manager fields.", variant: "destructive" })
+      return
+    }
+
     setRunning(true)
     try {
       const rec = await runKilnIncineration(
-        selectedEwtnId, selectedMcmId,
+        selectedEwtnId,
+        selectedMcmId,
         parseFloat(hopperWeight),
-        supervisorId, plantMgrId, plantMgrName, ashWaybill
+        supervisorId,
+        plantMgrId,
+        plantMgrName,
+        ashWaybill
       )
+
       setActiveRecord(rec)
-      await getFinalIncinerationRecords().then(setRecords)
-      toast({
-        title: rec.status === "COMPLETED" ? "🔥 Loop Closed — Incineration Complete" : "⚠ Weight Dispute Flagged",
-        description: `${rec.recordId} · ${rec.totalUnitsDestroyed} units → STATUS_DESTROYED`,
-        variant: rec.status === "COMPLETED" ? "default" : "destructive",
-      })
+      setRecords(prev => [rec, ...prev.filter(r => r.recordId !== rec.recordId)])
+
+      if (!rec.weightVerification.passed) {
+        toast({
+          title: "⚠️ WEIGHT DISPUTE FLAGGED",
+          description: `Dispute logged! Delta: ${rec.weightVerification.deltaPercent}%. Batches quarantined pending investigation.`,
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "🔥 KILN INCINERATION COMPLETED",
+          description: `Cert ${rec.certificateId} generated. All batch IDs permanently DESTROYED. Loop closed.`,
+        })
+      }
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" })
-    } finally { setRunning(false) }
+      toast({ title: "Error", description: err.message || "Kiln process failed.", variant: "destructive" })
+    } finally {
+      setRunning(false)
+    }
   }
 
   const allRecords = records.length > 0 ? records : finalRecords
@@ -322,30 +366,43 @@ export function KilnIncineration() {
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900 flex items-center gap-2">
-          <Flame className="w-8 h-8 text-red-600" />
-          Kiln Incineration — Final Loop Closure
-        </h1>
-        <p className="text-gray-500 mt-1 text-sm">
-          Layer 5 — Weight-to-energy telemetry · Geotagged master crate QR scan at feeder conveyor ·
-          Terminal STATUS_DESTROYED commitment for all batches.
-        </p>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900 flex items-center gap-2">
+            <Flame className="w-6 h-6 text-red-600" />
+            Kiln Incineration — Final Loop Closure
+          </h1>
+          <p className="text-gray-500 text-sm">
+            Continuous temperature telemetry, load-cell hopper weight verification, and immutable destruction certificates
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => navigate("/facility")} className="self-start md:self-auto gap-2">
+          <ArrowLeft className="w-4 h-4" /> Back to Facility Dashboard
+        </Button>
       </div>
 
       {/* KPIs */}
-      <div className="flex flex-wrap gap-3">
-        {[
-          { label: "E-WTNs Awaiting Kiln", value: readyEwtns.length,                             color: "bg-amber-50 border-amber-200 text-amber-800" },
-          { label: "Incineration Records",  value: allRecords.length,                              color: "bg-red-50 border-red-200 text-red-700" },
-          { label: "Batches Destroyed",     value: allRecords.reduce((s, r) => s + r.destroyedBatchIds.length, 0), color: "bg-gray-50 border-gray-300 text-gray-700" },
-          { label: "Units Destroyed",       value: allRecords.reduce((s, r) => s + r.totalUnitsDestroyed, 0).toLocaleString(), color: "bg-emerald-50 border-emerald-200 text-emerald-700" },
-        ].map(s => (
-          <div key={s.label} className={`flex items-center gap-2 px-4 py-2 rounded-lg border font-semibold ${s.color}`}>
-            <span className="text-lg font-bold">{s.value}</span>
-            <span className="text-xs">{s.label}</span>
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card className="p-4 border-gray-200">
+          <div className="text-xs text-gray-500 font-medium">E-WTNs Awaiting Kiln</div>
+          <div className="text-2xl font-bold text-amber-600 mt-1">{readyEwtns.length}</div>
+        </Card>
+        <Card className="p-4 border-gray-200">
+          <div className="text-xs text-gray-500 font-medium">Incineration Records</div>
+          <div className="text-2xl font-bold text-red-600 mt-1">{allRecords.length}</div>
+        </Card>
+        <Card className="p-4 border-gray-200">
+          <div className="text-xs text-gray-500 font-medium">Batches Destroyed</div>
+          <div className="text-2xl font-bold text-gray-900 mt-1">
+            {allRecords.reduce((s, r) => s + r.destroyedBatchIds.length, 0)}
           </div>
-        ))}
+        </Card>
+        <Card className="p-4 border-gray-200">
+          <div className="text-xs text-gray-500 font-medium">Units Destroyed</div>
+          <div className="text-2xl font-bold text-emerald-600 mt-1">
+            {allRecords.reduce((s, r) => s + r.totalUnitsDestroyed, 0).toLocaleString()}
+          </div>
+        </Card>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
@@ -505,48 +562,39 @@ export function KilnIncineration() {
           </CardContent>
         </Card>
 
-        {/* ══ Info Panel ═══════════════════════════════════════════════════ */}
+        {/* ══ Records & History ═════════════════════════════════════════════ */}
         <div className="space-y-4">
-          {/* Anti-Fraud Mechanisms */}
-          <Card className="border-gray-200">
-            <CardHeader className="pb-2 border-b border-gray-100">
-              <CardTitle className="text-sm font-bold flex items-center gap-2 text-gray-700">
-                <ShieldCheck className="w-4 h-4 text-emerald-500" /> Layer 5 Anti-Fraud Mechanisms
+          <Card className="border-gray-200 shadow-sm">
+            <CardHeader className="border-b border-gray-100 pb-3">
+              <CardTitle className="text-sm font-bold flex items-center justify-between">
+                <span>Incineration History &amp; Logs</span>
+                <span className="text-xs font-normal text-gray-500">{allRecords.length} records</span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-3 space-y-2 text-xs">
-              {[
-                { icon: Weight,      label: "Weight-to-Energy Tolerance",     desc: "Hopper load-cell vs L3/L4 weight ±5% — excess triggers CRITICAL fraud alert" },
-                { icon: Thermometer, label: "Continuous Telemetry",            desc: "6-reading burn log: LOADING → IGNITION → FULL_BURN → BURNOUT → COMPLETE" },
-                { icon: MapPin,      label: "Geotagged Feeder Scan",          desc: "GPS coordinates of QR scan location locked to registered facility lat/lng" },
-                { icon: QrCode,      label: "Master Crate QR at Conveyor",    desc: "MCM QR scanned at the physical feeder belt — proves waste entered the kiln" },
-                { icon: ShieldCheck, label: "Plant Manager SHA-256 Signature", desc: "SHA-256(recordId|plantManagerId|timestamp|MCM merkleRoot) — cannot be backdated" },
-                { icon: Flame,       label: "Terminal Status Lock",            desc: "All batch IDs → DESTROYED. POS hard-lock activated. Cannot be re-sold anywhere." },
-                { icon: Leaf,        label: "Ash Disposal Chain",             desc: "Ash waybill links to certified landfill — prevents illegal dumping" },
-              ].map(item => (
-                <div key={item.label} className="flex items-start gap-2">
-                  <item.icon className="w-3.5 h-3.5 text-gray-400 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-semibold text-gray-700">{item.label}: </span>
-                    <span className="text-gray-500">{item.desc}</span>
+            <CardContent className="pt-4 space-y-2 max-h-[540px] overflow-y-auto">
+              {allRecords.length === 0 ? (
+                <div className="py-12 text-center text-xs text-gray-400">No incineration records logged yet.</div>
+              ) : (
+                allRecords.map(rec => (
+                  <div key={rec.recordId}
+                    className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
+                      activeRecord?.recordId === rec.recordId ? "bg-red-50/70 border-red-300 shadow-sm" : "border-gray-100 hover:bg-gray-50"
+                    }`}
+                    onClick={() => setActiveRecord(rec)}>
+                    <div>
+                      <div className="font-mono text-xs font-bold text-gray-900">{rec.recordId}</div>
+                      <div className="text-[10px] text-gray-500 mt-0.5">
+                        {rec.destroyedBatchNumbers.join(", ")} · {rec.totalUnitsDestroyed} units · {rec.facilityName}
+                      </div>
+                    </div>
+                    <span className={`text-[10px] font-semibold border rounded-full px-2 py-0.5 ${
+                      rec.status === "COMPLETED" ? "bg-emerald-100 text-emerald-800 border-emerald-300" : "bg-red-100 text-red-700 border-red-300"
+                    }`}>
+                      {rec.status === "COMPLETED" ? "✓ Closed" : "⚠ Weight Dispute"}
+                    </span>
                   </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          {/* Burn Phase Guide */}
-          <Card className="border-gray-200">
-            <CardHeader className="pb-2 border-b border-gray-100">
-              <CardTitle className="text-sm font-bold flex items-center gap-2 text-gray-700">
-                <Thermometer className="w-4 h-4 text-orange-500" /> CPCB Dual-Chamber Standard
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-3 text-xs space-y-1 text-gray-600">
-              <p>Primary Chamber: <strong className="text-gray-900">≥ 850°C</strong> (complete combustion of organic matter)</p>
-              <p>Secondary Chamber: <strong className="text-gray-900">≥ 1050°C</strong> (destructs toxic off-gases, dioxins &amp; furans)</p>
-              <p>Ash metal test: <strong className="text-gray-900">TCLP compliant</strong> — disposed in secure landfill with Ash Waybill</p>
-              <p>Reference: <em>Bio-Medical Waste Management Rules 2016, Schedule I, Category 4</em></p>
+                ))
+              )}
             </CardContent>
           </Card>
         </div>
@@ -554,10 +602,10 @@ export function KilnIncineration() {
 
       {/* ── Active Certificate ─────────────────────────────────────────────── */}
       {activeRecord && (
-        <div>
-          <div className="flex justify-between items-center mb-3">
+        <div className="space-y-3 pt-2">
+          <div className="flex justify-between items-center">
             <h2 className="text-sm font-bold text-gray-700 flex items-center gap-2">
-              <FileText className="w-4 h-4" /> Auto-Compiled Destruction Certificate
+              <FileText className="w-4 h-4" /> Auto-Compiled Destruction Certificate ({activeRecord.recordId})
             </h2>
             <Button size="sm" variant="outline" className="gap-2 text-xs print:hidden"
               onClick={() => window.print()}>
@@ -566,34 +614,6 @@ export function KilnIncineration() {
           </div>
           <FIRCertificate rec={activeRecord} />
         </div>
-      )}
-
-      {/* ── Historical Records ─────────────────────────────────────────────── */}
-      {allRecords.filter(r => r !== activeRecord).length > 0 && (
-        <Card className="border-gray-200">
-          <CardHeader className="border-b border-gray-100 pb-3">
-            <CardTitle className="text-sm font-bold">Previous Incineration Records</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-4 space-y-2">
-            {allRecords.filter(r => r !== activeRecord).map(rec => (
-              <div key={rec.recordId}
-                className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:bg-gray-50 cursor-pointer"
-                onClick={() => setActiveRecord(rec)}>
-                <div>
-                  <div className="font-mono text-xs font-bold text-gray-900">{rec.recordId}</div>
-                  <div className="text-[10px] text-gray-500">
-                    {rec.destroyedBatchNumbers.join(", ")} · {rec.totalUnitsDestroyed} units · {rec.facilityName}
-                  </div>
-                </div>
-                <span className={`text-[10px] font-semibold border rounded-full px-2 py-0.5 ${
-                  rec.status === "COMPLETED" ? "bg-emerald-100 text-emerald-800 border-emerald-300" : "bg-red-100 text-red-700 border-red-300"
-                }`}>
-                  {rec.status === "COMPLETED" ? "✓ Closed" : "⚠ Weight Dispute"}
-                </span>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
       )}
     </div>
   )

@@ -1,65 +1,115 @@
 import { useSharedStore } from "@/store/useSharedStore"
+import { useNavigate } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Package, AlertTriangle, ArchiveX, CheckCircle } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { StatusBadge } from "@/components/shared/StatusBadge"
+import { Factory, Package, AlertTriangle, ArchiveX, CheckCircle, ArrowRight, Calendar } from "lucide-react"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from "recharts"
 
 export function ManufacturerDashboard() {
+  const navigate = useNavigate()
   const destructions = useSharedStore(state => state.destructions)
   const returns = useSharedStore(state => state.returns)
+  const batches = useSharedStore(state => state.batches)
 
-  const pendingDestructions = 5 // mock logic
-  const completedDestructions = destructions.length
+  const pendingDestructions = batches.filter(
+    b => b.currentStatus === "SCHEDULED_FOR_DESTRUCTION" || 
+         b.currentStatus === "CONDITION_DENATURED_CONDEMNED"
+  ).length
+  const completedDestructions = batches.filter(b => b.currentStatus === "DESTROYED").length || destructions.length
+
+  const totalUnitsDestroyed = destructions.reduce((acc, d) => acc + (d.quantityDestroyed || 0), 0)
+  const currentMonth = new Date().toLocaleString('default', { month: 'short' })
 
   const chartData = [
-    { month: "Jan", volume: 120 },
-    { month: "Feb", volume: 150 },
-    { month: "Mar", volume: 80 },
-    { month: "Apr", volume: completedDestructions * 100 }, // Make it dynamic based on actions
+    { month: "Cycle 1", volume: 0 },
+    { month: "Cycle 2", volume: 0 },
+    { month: `${currentMonth} (Live)`, volume: totalUnitsDestroyed },
   ]
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-gray-900">Manufacturer Dashboard</h1>
+    <div className="space-y-6 animate-in fade-in duration-300">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 flex items-center gap-2">
+            <Factory className="w-8 h-8 text-emerald-700" />
+            Manufacturer Operations & Intake
+          </h1>
+          <p className="text-gray-500 mt-1">
+            Reconciliation of distributor returns, quarantine staging, and CBWTF disposal scheduling.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2.5">
+          <Button 
+            onClick={() => navigate("/manufacturer/intake")}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 cursor-pointer text-xs"
+          >
+            <Package className="w-3.5 h-3.5" />
+            Warehouse Intake ({returns.length})
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={() => navigate("/manufacturer/cbwtf-scheduler")}
+            className="border-gray-200 text-gray-700 hover:bg-gray-100 flex items-center gap-1.5 cursor-pointer text-xs"
+          >
+            <Calendar className="w-3.5 h-3.5 text-amber-600" />
+            Schedule CBWTF
+          </Button>
+        </div>
+      </div>
       
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card>
+      {/* KPI Cards */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card className="shadow-xs border-gray-200">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Incoming Returns</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-500">Inbound Returns</CardTitle>
             <Package className="w-4 h-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900 animate-in slide-in-from-bottom-2">
-              {returns.length}
-            </div>
+            <div className="text-2xl font-bold text-gray-900">{returns.length}</div>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="shadow-xs border-gray-200">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-gray-500">Awaiting Destruction</CardTitle>
             <AlertTriangle className="w-4 h-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-600 animate-in slide-in-from-bottom-2">{pendingDestructions}</div>
+            <div className="text-2xl font-bold text-amber-600">{pendingDestructions}</div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="shadow-xs border-gray-200">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-gray-500">Certified Destroyed</CardTitle>
             <CheckCircle className="w-4 h-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
-            <div key={completedDestructions} className="text-2xl font-bold text-emerald-600 animate-in slide-in-from-bottom-2">{completedDestructions}</div>
+            <div className="text-2xl font-bold text-emerald-600">{completedDestructions}</div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-xs border-gray-200">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-gray-500">Active Market Batches</CardTitle>
+            <Factory className="w-4 h-4 text-purple-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-gray-900">{batches.length}</div>
           </CardContent>
         </Card>
       </div>
 
+      {/* Chart Section */}
       <div className="grid grid-cols-1 gap-6">
-        <Card>
+        <Card className="shadow-xs border-gray-200">
           <CardHeader>
-            <CardTitle className="flex items-center text-gray-700">
-              <ArchiveX className="w-5 h-5 mr-2" />
+            <CardTitle className="flex items-center text-gray-900 text-base font-bold">
+              <ArchiveX className="w-4 h-4 mr-2 text-amber-600" />
               Destruction Volume Over Time
             </CardTitle>
           </CardHeader>
@@ -74,9 +124,9 @@ export function ManufacturerDashboard() {
                     cursor={{fill: '#f3f4f6'}}
                     contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                   />
-                  <Bar dataKey="volume" fill="#f97316" radius={[4, 4, 0, 0]} name="Units Destroyed" isAnimationActive={true}>
+                  <Bar dataKey="volume" fill="#10b981" radius={[4, 4, 0, 0]} name="Units Destroyed" isAnimationActive={true}>
                     {chartData.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={index === chartData.length - 1 ? '#ef4444' : '#f97316'} />
+                      <Cell key={`cell-${index}`} fill={index === chartData.length - 1 ? '#059669' : '#10b981'} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -85,6 +135,77 @@ export function ManufacturerDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Recent Quarantine & Intake Batches Table */}
+      <Card className="shadow-xs border-gray-200">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-lg font-bold text-gray-900">
+            Batches Under Reverse Custody
+          </CardTitle>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => navigate("/manufacturer/intake")}
+            className="text-xs text-emerald-700 hover:text-emerald-800 cursor-pointer"
+          >
+            Open Intake Station <ArrowRight className="w-3.5 h-3.5 ml-1" />
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Batch Number</TableHead>
+                <TableHead>Product Formulation</TableHead>
+                <TableHead>Current Volume</TableHead>
+                <TableHead>Custody Status</TableHead>
+                <TableHead className="text-right">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {batches.slice(0, 5).map(batch => (
+                <TableRow key={batch.batchId} className="hover:bg-gray-50 transition-colors">
+                  <TableCell>
+                    <div className="font-mono text-xs font-bold text-gray-900">
+                      {batch.batchNumber}
+                    </div>
+                    <div className="text-[10px] text-gray-400 font-mono mt-0.5">{batch.batchId}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="font-semibold text-sm text-gray-900">{batch.product.name}</div>
+                    <div className="text-xs text-gray-500">{batch.product.genericName}</div>
+                  </TableCell>
+                  <TableCell className="font-mono font-bold text-sm text-gray-900">
+                    {batch.currentQuantity} {batch.unit}
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={batch.currentStatus} />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => navigate(`/passport/${batch.batchId}`)}
+                        className="text-xs border-gray-200 text-gray-700 hover:bg-gray-100 cursor-pointer"
+                      >
+                        Passport
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        onClick={() => navigate("/manufacturer/cbwtf-scheduler")}
+                        className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+                      >
+                        Schedule
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   )
 }

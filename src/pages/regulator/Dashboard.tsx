@@ -1,17 +1,23 @@
 import { useEffect, useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { getRegulatorDashboard } from "@/api/mockApi"
 import type { RegulatorDashboard } from "@/api/types"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertTriangle, Package, ShieldAlert, BarChart3, TrendingUp, Building2, Eye } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { StatusBadge } from "@/components/shared/StatusBadge"
+import { AlertTriangle, Package, ShieldAlert, BarChart3, Building2, Eye, ArrowUpRight, ShieldCheck, ArrowRight } from "lucide-react"
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, Legend, Cell } from "recharts"
 import { useSharedStore } from "@/store/useSharedStore"
 
 export function RegulatorDashboardView() {
+  const navigate = useNavigate()
   const [kpis, setKpis] = useState<RegulatorDashboard | null>(null)
   
-  // Use live alerts from the store for the top count, simulating a truly live dashboard
   const liveAlerts = useSharedStore(state => state.fraudAlerts)
   const destructions = useSharedStore(state => state.destructions)
+  const batches = useSharedStore(state => state.batches)
+  const organizations = useSharedStore(state => state.organizations)
 
   useEffect(() => {
     getRegulatorDashboard().then(setKpis)
@@ -19,98 +25,108 @@ export function RegulatorDashboardView() {
 
   if (!kpis) return <div className="p-8 text-center text-gray-500 animate-pulse">Loading dashboard...</div>
 
+  const destroyedBatchesCount = batches.filter(b => b.currentStatus === 'DESTROYED').length
+  const destroyedCount = destroyedBatchesCount > 0 ? destroyedBatchesCount : (destructions.length > 0 ? 1 : 0)
+
   const chartData = [
-    { name: "Mon", fraud: 2, destructions: 10 },
-    { name: "Tue", fraud: 4, destructions: 15 },
-    { name: "Wed", fraud: 3, destructions: 8 },
-    { name: "Thu", fraud: 5, destructions: 20 },
-    { name: "Fri", fraud: 1, destructions: 12 },
-    { name: "Sat", fraud: 2, destructions: 5 },
-    { name: "Sun", fraud: 8, destructions: 25 },
+    { name: "Day 1", fraud: 0, destructions: 0 },
+    { name: "Day 2", fraud: 0, destructions: 0 },
+    { name: "Day 3", fraud: 0, destructions: 0 },
+    { name: "Day 4", fraud: 0, destructions: 0 },
+    { name: "Day 5", fraud: 0, destructions: 0 },
+    { name: "Day 6", fraud: 0, destructions: 0 },
+    { name: "Today", fraud: liveAlerts.length, destructions: destroyedCount },
   ]
 
   const complianceData = [
-    { org: "Sun Pharma", score: 98 },
-    { org: "ABC Distributors", score: 92 },
-    { org: "Raj Pharmacy", score: 85 },
-    { org: "EcoWaste", score: 99 },
+    { org: "Sun Pharma (Mfr)", score: 100 },
+    { org: "ABC Distributors Ltd", score: 100 },
+    { org: "EcoWaste Management", score: 100 },
+    { org: liveAlerts[0]?.organization || "Rogue POS Terminal", score: liveAlerts.length > 0 ? 0 : 100 },
   ]
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 animate-in fade-in duration-300">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Regulator Overview</h1>
-          <p className="text-gray-500 mt-1">National Tracking Network</p>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 flex items-center gap-2">
+            <ShieldCheck className="w-8 h-8 text-emerald-700" />
+            CDSCO Regulatory Sentinel
+          </h1>
+          <p className="text-gray-500 mt-1">
+            National pharmaceutical reverse tracking, cryptographic custody verification, and fraud anomaly detection.
+          </p>
         </div>
-        <div className="flex items-center text-sm font-medium text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-          <Eye className="w-4 h-4 mr-2 animate-pulse" />
+        <div className="flex items-center text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200 self-start md:self-auto">
+          <Eye className="w-3.5 h-3.5 mr-1.5 animate-pulse text-emerald-600" />
           Live Monitoring Active
         </div>
       </div>
 
+      {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
+        <Card className="shadow-xs border-gray-200">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium text-gray-500">Tracked Batches</CardTitle>
-            <Package className="h-4 w-4 text-gray-400" />
+            <Package className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{kpis.totalTrackedBatches.toLocaleString()}</div>
-            <p className="text-xs text-green-500 flex items-center mt-1">
-              <TrendingUp className="w-3 h-3 mr-1" /> +12% from last month
-            </p>
+            <div className="text-2xl font-bold text-gray-900">{kpis.totalTrackedBatches.toLocaleString()}</div>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card 
+          onClick={() => navigate("/regulator/organizations")}
+          className="cursor-pointer hover:shadow-md transition-all hover:border-emerald-300 group shadow-xs border-gray-200"
+        >
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium text-gray-500">Organizations</CardTitle>
-            <Building2 className="h-4 w-4 text-gray-400" />
+            <CardTitle className="text-sm font-medium text-gray-500 group-hover:text-emerald-700 transition-colors">
+              Organizations (4 Sectors)
+            </CardTitle>
+            <div className="flex items-center text-emerald-600">
+              <Building2 className="h-4 w-4 text-gray-400 group-hover:text-emerald-600 transition-colors" />
+              <ArrowUpRight className="h-3.5 w-3.5 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {(kpis.totalManufacturers + kpis.totalDistributors + kpis.totalRetailers).toLocaleString()}
+            <div className="text-2xl font-bold text-gray-900 group-hover:text-emerald-700 transition-colors">
+              {organizations.length > 0 ? organizations.length : 14}
             </div>
-            <p className="text-xs text-gray-500 mt-1">Active nodes in network</p>
           </CardContent>
         </Card>
 
-        <Card className="border-red-100 bg-red-50/30">
+        <Card className="border-red-200 bg-red-50/20 shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium text-red-600">Total Fraud Alerts</CardTitle>
             <ShieldAlert className="h-4 w-4 text-red-500 animate-pulse" />
           </CardHeader>
           <CardContent>
-            {/* Animate key to force count up re-render if it changes */}
-            <div key={liveAlerts.length} className="text-2xl font-bold text-red-700 animate-in slide-in-from-bottom-2">
+            <div className="text-2xl font-bold text-red-700">
               {liveAlerts.length}
             </div>
-            <p className="text-xs text-red-500 mt-1">
-              {liveAlerts.filter(a => a.severity === 'CRITICAL').length} CRITICAL
-            </p>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="shadow-xs border-gray-200">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium text-gray-500">Destroyed</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-gray-400" />
+            <CardTitle className="text-sm font-medium text-gray-500">Certified Destroyed</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div key={destructions.length} className="text-2xl font-bold text-orange-600 animate-in slide-in-from-bottom-2">
-              {kpis.destroyedBatches + destructions.length}
+            <div className="text-2xl font-bold text-orange-600">
+              {destroyedCount}
             </div>
-            <p className="text-xs text-gray-500 mt-1">Total batches securely destroyed</p>
           </CardContent>
         </Card>
       </div>
 
+      {/* Chart Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
+        <Card className="shadow-xs border-gray-200">
           <CardHeader>
-            <CardTitle className="flex items-center text-gray-700">
-              <BarChart3 className="w-5 h-5 mr-2" />
+            <CardTitle className="flex items-center text-gray-900 text-base font-bold">
+              <BarChart3 className="w-4 h-4 mr-2 text-emerald-600" />
               Incidents & Destructions (7 Days)
             </CardTitle>
           </CardHeader>
@@ -143,10 +159,10 @@ export function RegulatorDashboardView() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="shadow-xs border-gray-200">
           <CardHeader>
-            <CardTitle className="flex items-center text-gray-700">
-              <ShieldAlert className="w-5 h-5 mr-2" />
+            <CardTitle className="flex items-center text-gray-900 text-base font-bold">
+              <ShieldAlert className="w-4 h-4 mr-2 text-blue-600" />
               Organization Compliance Scores
             </CardTitle>
           </CardHeader>
@@ -172,6 +188,76 @@ export function RegulatorDashboardView() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Flagged Batches & National Investigation Stream Table */}
+      <Card className="shadow-xs border-gray-200">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <ShieldAlert className="w-5 h-5 text-red-600" />
+            National Monitored Batches &amp; Sentinel Alerts
+          </CardTitle>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => navigate("/regulator/alerts")}
+            className="text-xs text-emerald-700 hover:text-emerald-800 cursor-pointer"
+          >
+            All Alerts ({liveAlerts.length}) <ArrowRight className="w-3.5 h-3.5 ml-1" />
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Batch Identifier</TableHead>
+                <TableHead>Product Formulation</TableHead>
+                <TableHead>Holder Organization</TableHead>
+                <TableHead>Current Status</TableHead>
+                <TableHead className="text-right">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {batches.slice(0, 5).map(batch => (
+                <TableRow key={batch.batchId} className="hover:bg-gray-50 transition-colors">
+                  <TableCell>
+                    <div className="font-mono text-xs font-bold text-gray-900">
+                      {batch.batchNumber}
+                    </div>
+                    <div className="text-[10px] text-gray-400 font-mono mt-0.5">{batch.batchId}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="font-semibold text-sm text-gray-900">{batch.product.name}</div>
+                    <div className="text-xs text-gray-500">{batch.product.genericName}</div>
+                  </TableCell>
+                  <TableCell className="text-sm text-gray-700">{batch.currentOwner.organizationName}</TableCell>
+                  <TableCell>
+                    <StatusBadge status={batch.currentStatus} />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => navigate(`/passport/${batch.batchId}`)}
+                        className="text-xs border-gray-200 text-gray-700 hover:bg-gray-100 cursor-pointer"
+                      >
+                        Inspect Passport
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        onClick={() => navigate("/regulator/alerts")}
+                        className="text-xs bg-slate-900 hover:bg-slate-800 text-white cursor-pointer"
+                      >
+                        Alerts
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   )
 }

@@ -1,167 +1,391 @@
-import type { BatchPassport, FraudAlert, ReturnRequest, DestructionCertificate } from "@/api/types";
+import type { BatchPassport, FraudAlert, ReturnRequest, DestructionCertificate, OrganizationNode } from "@/api/types";
 
 export const SEED_BATCHES: BatchPassport[] = [
   {
-    batchId: "BATCH-2026-00123",
-    product: { productId: "PROD-01", name: "Augmentin 625 Duo", genericName: "Amoxicillin and Potassium Clavulanate", manufacturer: "GSK" },
-    batchNumber: "ABC12345",
-    manufacturingDate: "2024-01-10T00:00:00Z",
-    expiryDate: "2026-09-30T00:00:00Z",
-    currentStatus: "EXPIRING_SOON",
-    currentQuantity: 100,
-    originalQuantity: 1000,
-    unit: "STRIPS",
-    currentOwner: { organizationId: "ORG-001", organizationName: "Raj Pharmacy (Jaipur)", role: "RETAILER" },
-    riskLevel: "LOW",
-    riskScore: 10,
-    timeline: [
-      { eventId: "E1", eventType: "BATCH_CREATED", status: "COMPLETED", timestamp: "2024-01-10T10:00:00Z", actor: "Manufacturer" }
-    ]
-  },
-  {
-    batchId: "BATCH-2026-00124",
-    product: { productId: "PROD-02", name: "Dolo 650", genericName: "Paracetamol", manufacturer: "Micro Labs" },
-    batchNumber: "DEF98765",
-    manufacturingDate: "2023-05-15T00:00:00Z",
-    expiryDate: "2025-05-15T00:00:00Z",
-    currentStatus: "DESTROYED",
-    currentQuantity: 0,
-    originalQuantity: 500,
-    unit: "STRIPS",
-    currentOwner: { organizationId: "ORG-004", organizationName: "EcoWaste Management", role: "WASTE_FACILITY" },
-    riskLevel: "LOW",
-    riskScore: 0,
-    timeline: [
-      { eventId: "E2", eventType: "DESTRUCTION_COMPLETED", status: "COMPLETED", timestamp: "2025-06-01T14:30:00Z", actor: "Waste Facility", quantity: 50 }
-    ]
-  },
-  {
-    batchId: "BATCH-2026-00125",
-    product: { productId: "PROD-03", name: "Azithral 500", genericName: "Azithromycin", manufacturer: "Alembic" },
-    batchNumber: "XYZ3344",
-    manufacturingDate: "2022-11-20T00:00:00Z",
-    expiryDate: "2024-11-20T00:00:00Z",
-    currentStatus: "EXPIRED",
-    currentQuantity: 50,
-    originalQuantity: 200,
-    unit: "STRIPS",
-    currentOwner: { organizationId: "ORG-001", organizationName: "Raj Pharmacy (Jaipur)", role: "RETAILER" },
-    riskLevel: "MEDIUM",
-    riskScore: 40,
-    timeline: [
-      { eventId: "E3", eventType: "EXPIRY_ALERT", status: "COMPLETED", timestamp: "2024-09-20T10:00:00Z", actor: "System" }
-    ]
-  },
-  {
-    batchId: "BATCH-2026-00126",
-    product: { productId: "PROD-04", name: "Allegra 120", genericName: "Fexofenadine", manufacturer: "Sanofi" },
-    batchNumber: "ALLG456",
-    manufacturingDate: "2024-02-12T00:00:00Z",
-    expiryDate: "2026-02-12T00:00:00Z",
-    currentStatus: "RETURN_INITIATED",
-    currentQuantity: 30,
-    originalQuantity: 300,
-    unit: "STRIPS",
-    currentOwner: { organizationId: "ORG-001", organizationName: "Raj Pharmacy (Jaipur)", role: "RETAILER" },
-    riskLevel: "LOW",
-    riskScore: 5,
-    timeline: [
-      { eventId: "E4", eventType: "RETURN_INITIATED", status: "COMPLETED", timestamp: "2024-10-01T08:30:00Z", actor: "Raj Pharmacy", quantity: 30 }
-    ]
-  },
-  {
-    batchId: "BATCH-2026-00127",
-    product: { productId: "PROD-05", name: "Pan 40", genericName: "Pantoprazole", manufacturer: "Alkem" },
-    batchNumber: "PAN8899",
-    manufacturingDate: "2024-06-01T00:00:00Z",
-    expiryDate: "2026-06-01T00:00:00Z",
+    batchId: "BAT-001",
+    batchNumber: "BATCH-CRX-9901",
+    product: {
+      productId: "PRD-001",
+      name: "Crocin 650 Advance",
+      genericName: "Paracetamol",
+      manufacturer: "Sun Pharmaceutical Industries Ltd",
+    },
+    manufacturingDate: "2024-01-10",
+    expiryDate: "2026-12-31",
     currentStatus: "ACTIVE",
     currentQuantity: 500,
     originalQuantity: 500,
     unit: "STRIPS",
-    currentOwner: { organizationId: "ORG-002", organizationName: "ABC Distributors Ltd", role: "DISTRIBUTOR" },
+    currentOwner: {
+      organizationId: "ret-001",
+      organizationName: "Raj Pharmacy Jaipur Central",
+      role: "RETAILER",
+    },
     riskLevel: "LOW",
-    riskScore: 0,
+    riskScore: 5,
     timeline: [
-      { eventId: "E5", eventType: "BATCH_CREATED", status: "COMPLETED", timestamp: "2024-06-01T08:00:00Z", actor: "Alkem" }
-    ]
+      {
+        eventId: "EVT-101-A",
+        eventType: "BATCH_MANUFACTURED",
+        status: "COMPLETED",
+        timestamp: "2024-01-10T10:00:00Z",
+        actor: "Sun Pharmaceutical Industries Ltd",
+        location: "Ahmedabad, Gujarat",
+        quantity: 500,
+      },
+      {
+        eventId: "EVT-101-B",
+        eventType: "DISPATCHED_TO_DISTRIBUTOR",
+        status: "COMPLETED",
+        timestamp: "2024-01-12T14:30:00Z",
+        actor: "ABC Distributors Central Logistics",
+        location: "Mumbai Distribution Hub",
+        quantity: 500,
+      },
+      {
+        eventId: "EVT-101-C",
+        eventType: "STOCK_RECEIVED",
+        status: "ACTIVE",
+        timestamp: "2024-01-15T09:15:00Z",
+        actor: "Raj Pharmacy Jaipur Central",
+        location: "Jaipur Dispensary Dock",
+        quantity: 500,
+      },
+      {
+        eventId: "EVT-101-D",
+        eventType: "INTEGRITY_SCAN_VERIFIED",
+        status: "ACTIVE",
+        timestamp: "2024-01-15T11:45:00Z",
+        actor: "Raj Pharmacy Certified Pharmacist",
+        location: "Jaipur Front Counter",
+        quantity: 500,
+      },
+    ],
   },
   {
-    batchId: "BATCH-2026-00128",
-    product: { productId: "PROD-06", name: "Calpol 500", genericName: "Paracetamol", manufacturer: "GSK" },
-    batchNumber: "CAL2211",
-    manufacturingDate: "2022-01-10T00:00:00Z",
-    expiryDate: "2024-01-10T00:00:00Z",
-    currentStatus: "SCHEDULED_FOR_DESTRUCTION",
+    batchId: "BAT-002",
+    batchNumber: "ABC123-AMX",
+    product: {
+      productId: "PRD-002",
+      name: "Amoxil 500mg",
+      genericName: "Amoxicillin",
+      manufacturer: "PharmaCorp India Innovations",
+    },
+    manufacturingDate: "2023-06-01",
+    expiryDate: "2026-09-29",
+    currentStatus: "EXPIRING_SOON",
     currentQuantity: 120,
-    originalQuantity: 1000,
+    originalQuantity: 300,
     unit: "BOTTLES",
-    currentOwner: { organizationId: "ORG-003", organizationName: "Sun Pharmaceutical Industries", role: "MANUFACTURER" },
-    riskLevel: "LOW",
-    riskScore: 0,
+    currentOwner: {
+      organizationId: "ret-001",
+      organizationName: "Raj Pharmacy Jaipur Central",
+      role: "RETAILER",
+    },
+    riskLevel: "MEDIUM",
+    riskScore: 45,
     timeline: [
-      { eventId: "E6", eventType: "DESTRUCTION_SCHEDULED", status: "COMPLETED", timestamp: "2024-02-15T09:00:00Z", actor: "Manufacturer" }
-    ]
+      {
+        eventId: "EVT-102-A",
+        eventType: "BATCH_MANUFACTURED",
+        status: "COMPLETED",
+        timestamp: "2023-06-01T08:00:00Z",
+        actor: "PharmaCorp India Innovations",
+        location: "Vadodara Plant",
+        quantity: 300,
+      },
+      {
+        eventId: "EVT-102-B",
+        eventType: "DISPATCHED_TO_DISTRIBUTOR",
+        status: "COMPLETED",
+        timestamp: "2023-06-05T12:00:00Z",
+        actor: "ABC Distributors Central Logistics",
+        location: "Western Hub Depot",
+        quantity: 300,
+      },
+      {
+        eventId: "EVT-102-C",
+        eventType: "DELIVERED_TO_RETAILER",
+        status: "COMPLETED",
+        timestamp: "2023-06-10T16:20:00Z",
+        actor: "Raj Pharmacy Jaipur Central",
+        location: "Jaipur, Rajasthan",
+        quantity: 300,
+      },
+      {
+        eventId: "EVT-102-D",
+        eventType: "EXPIRY_WARNING",
+        status: "EXPIRING_SOON",
+        timestamp: "2026-09-01T08:00:00Z",
+        actor: "Automated CDSCO Sentinel",
+        location: "Jaipur, Rajasthan",
+        quantity: 120,
+      },
+    ],
   },
   {
-    batchId: "BATCH-2026-00129",
-    product: { productId: "PROD-07", name: "Thyronorm 50", genericName: "Thyroxine", manufacturer: "Abbott" },
-    batchNumber: "THY7766",
-    manufacturingDate: "2023-08-20T00:00:00Z",
-    expiryDate: "2025-08-20T00:00:00Z",
-    currentStatus: "ACTIVE",
-    currentQuantity: 50,
-    originalQuantity: 50,
+    batchId: "BAT-003",
+    batchNumber: "BATCH-BRF-402",
+    product: {
+      productId: "PRD-003",
+      name: "Brufen 400mg",
+      genericName: "Ibuprofen",
+      manufacturer: "MediLife Makers Private Limited",
+    },
+    manufacturingDate: "2022-02-15",
+    expiryDate: "2024-02-15",
+    currentStatus: "EXPIRED",
+    currentQuantity: 80,
+    originalQuantity: 200,
     unit: "STRIPS",
-    currentOwner: { organizationId: "ORG-001", organizationName: "Raj Pharmacy (Jaipur)", role: "RETAILER" },
-    riskLevel: "LOW",
-    riskScore: 0,
+    currentOwner: {
+      organizationId: "ret-001",
+      organizationName: "Raj Pharmacy Jaipur Central",
+      role: "RETAILER",
+    },
+    riskLevel: "HIGH",
+    riskScore: 78,
     timeline: [
-      { eventId: "E7", eventType: "BATCH_CREATED", status: "COMPLETED", timestamp: "2023-08-20T08:00:00Z", actor: "Abbott" }
-    ]
+      {
+        eventId: "EVT-103-A",
+        eventType: "BATCH_MANUFACTURED",
+        status: "COMPLETED",
+        timestamp: "2022-02-15T09:00:00Z",
+        actor: "MediLife Makers Private Limited",
+        location: "Baddi, Himachal Pradesh",
+        quantity: 200,
+      },
+      {
+        eventId: "EVT-103-B",
+        eventType: "DISPATCHED_TO_DISTRIBUTOR",
+        status: "COMPLETED",
+        timestamp: "2022-02-20T11:30:00Z",
+        actor: "ABC Distributors Central Logistics",
+        location: "Delhi Transit Hub",
+        quantity: 200,
+      },
+      {
+        eventId: "EVT-103-C",
+        eventType: "DELIVERED_TO_RETAILER",
+        status: "COMPLETED",
+        timestamp: "2022-02-25T14:00:00Z",
+        actor: "Raj Pharmacy Jaipur Central",
+        location: "Jaipur, Rajasthan",
+        quantity: 200,
+      },
+      {
+        eventId: "EVT-103-D",
+        eventType: "BATCH_EXPIRED",
+        status: "EXPIRED",
+        timestamp: "2024-02-15T00:00:00Z",
+        actor: "System Sentinel",
+        location: "Jaipur, Rajasthan",
+        quantity: 80,
+      },
+      {
+        eventId: "EVT-103-E",
+        eventType: "RETURN_INITIATED",
+        status: "RETURN_INITIATED",
+        timestamp: "2024-02-16T10:15:00Z",
+        actor: "Raj Pharmacy Pharmacist",
+        location: "Jaipur Handoff Bay",
+        quantity: 80,
+      },
+    ],
+  },
+  {
+    batchId: "BAT-004",
+    batchNumber: "BATCH-AZT-1120",
+    product: {
+      productId: "PRD-004",
+      name: "Azithral 500mg",
+      genericName: "Azithromycin",
+      manufacturer: "Cipla Therapeutics Labs",
+    },
+    manufacturingDate: "2024-03-01",
+    expiryDate: "2027-02-28",
+    currentStatus: "ACTIVE",
+    currentQuantity: 350,
+    originalQuantity: 350,
+    unit: "STRIPS",
+    currentOwner: {
+      organizationId: "ret-001",
+      organizationName: "Raj Pharmacy Jaipur Central",
+      role: "RETAILER",
+    },
+    riskLevel: "LOW",
+    riskScore: 2,
+    timeline: [
+      {
+        eventId: "EVT-104-A",
+        eventType: "BATCH_MANUFACTURED",
+        status: "COMPLETED",
+        timestamp: "2024-03-01T10:00:00Z",
+        actor: "Cipla Therapeutics Labs",
+        location: "Goa Manufacturing Plant",
+        quantity: 350,
+      },
+      {
+        eventId: "EVT-104-B",
+        eventType: "DISPATCHED_TO_DISTRIBUTOR",
+        status: "COMPLETED",
+        timestamp: "2024-03-05T15:00:00Z",
+        actor: "ABC Distributors Central Logistics",
+        location: "Jaipur, Rajasthan",
+        quantity: 350,
+      },
+      {
+        eventId: "EVT-104-C",
+        eventType: "STOCK_RECEIVED",
+        status: "ACTIVE",
+        timestamp: "2024-03-10T14:30:00Z",
+        actor: "Raj Pharmacy Jaipur Central",
+        location: "Jaipur, Rajasthan",
+        quantity: 350,
+      },
+    ],
+  },
+  {
+    batchId: "BAT-005",
+    batchNumber: "BATCH-CRX-7711",
+    product: {
+      productId: "PRD-005",
+      name: "Corex DX Syrup 100ml",
+      genericName: "Dextromethorphan + Chlorpheniramine",
+      manufacturer: "Sun Pharmaceutical Industries Ltd",
+    },
+    manufacturingDate: "2024-05-15",
+    expiryDate: "2026-11-20",
+    currentStatus: "ACTIVE",
+    currentQuantity: 200,
+    originalQuantity: 200,
+    unit: "BOTTLES",
+    currentOwner: {
+      organizationId: "ret-001",
+      organizationName: "Raj Pharmacy Jaipur Central",
+      role: "RETAILER",
+    },
+    riskLevel: "LOW",
+    riskScore: 4,
+    timeline: [
+      {
+        eventId: "EVT-105",
+        eventType: "BATCH_DISPATCHED",
+        status: "ACTIVE",
+        timestamp: "2024-05-20T11:00:00Z",
+        actor: "Sun Pharmaceutical Industries Ltd",
+        location: "Halol, Gujarat",
+        quantity: 200,
+      },
+    ],
+  },
+  {
+    batchId: "BAT-006",
+    batchNumber: "BATCH-LIM-3321",
+    product: {
+      productId: "PRD-006",
+      name: "Limcee Chewable 500mg",
+      genericName: "Vitamin C + Zinc",
+      manufacturer: "PharmaCorp India Innovations",
+    },
+    manufacturingDate: "2023-08-10",
+    expiryDate: "2026-10-15",
+    currentStatus: "EXPIRING_SOON",
+    currentQuantity: 150,
+    originalQuantity: 400,
+    unit: "STRIPS",
+    currentOwner: {
+      organizationId: "ret-001",
+      organizationName: "Raj Pharmacy Jaipur Central",
+      role: "RETAILER",
+    },
+    riskLevel: "MEDIUM",
+    riskScore: 35,
+    timeline: [
+      {
+        eventId: "EVT-106",
+        eventType: "EXPIRY_WARNING",
+        status: "EXPIRING_SOON",
+        timestamp: "2026-09-05T09:15:00Z",
+        actor: "CDSCO Quality Monitor",
+        location: "Jaipur, Rajasthan",
+        quantity: 150,
+      },
+    ],
   },
 ];
 
-export const SEED_ALERTS: FraudAlert[] = [
-  {
-    alertId: "ALT-001",
-    type: "DESTROYED_BATCH_REENTRY",
-    severity: "CRITICAL",
-    batchId: "BATCH-2026-00124",
-    batchNumber: "DEF98765",
-    detectedAt: new Date(Date.now() - 86400000).toISOString(),
-    location: "Mumbai POS Terminal 3",
-    organization: "Unknown Retailer",
-    message: "Attempted sale of a destroyed batch (DEF98765) detected at POS.",
-  },
-  {
-    alertId: "ALT-002",
-    type: "QUANTITY_MISMATCH",
-    severity: "HIGH",
-    batchId: "BATCH-2026-00123",
-    batchNumber: "ABC12345",
-    detectedAt: new Date(Date.now() - 172800000).toISOString(),
-    location: "ABC Distributors Warehouse",
-    organization: "ABC Distributors Ltd",
-    message: "Discrepancy of 6 units reported during return receipt.",
-  }
-];
+export const SEED_ALERTS: FraudAlert[] = [];
 
-export const SEED_RETURNS: ReturnRequest[] = [
-  {
-    returnId: "RET-7281",
-    batchId: "BATCH-2026-00123",
-    batchNumber: "ABC12345",
-    productName: "Augmentin 625 Duo",
-    requestedQuantity: 100,
-    status: "AWAITING_DISTRIBUTOR",
-    initiatedBy: "Raj Pharmacy (Jaipur)",
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-    pickupStatus: "PENDING"
-  }
-];
+export const SEED_RETURNS: ReturnRequest[] = [];
 
 export const SEED_DESTRUCTIONS: DestructionCertificate[] = [];
+
+export const INITIAL_ORGANIZATIONS: OrganizationNode[] = [
+  // 1. Manufacturer (OEM)
+  {
+    id: "mfr-001",
+    name: "Sun Pharmaceutical Industries Ltd",
+    type: "MANUFACTURER",
+    licenseNumber: "MFG-GJ-2018-09112",
+    city: "Ahmedabad",
+    state: "Gujarat",
+    complianceScore: 99,
+    active: true,
+    contactEmail: "regulatory@sunpharma.in",
+    contactPhone: "+91 79 6600 4400",
+    registeredDate: "2021-03-15",
+    address: "Plot 12-14, GIDC Industrial Estate, Halol, Gujarat"
+  },
+
+  // 2. Distributor (Logistics Hub)
+  {
+    id: "dist-001",
+    name: "ABC Distributors Central Logistics",
+    type: "DISTRIBUTOR",
+    licenseNumber: "DIST-DL-2001-7782",
+    city: "New Delhi",
+    state: "Delhi",
+    complianceScore: 96,
+    active: true,
+    contactEmail: "admin@abcdistributors.in",
+    contactPhone: "+91 11 2390 1122",
+    registeredDate: "2021-06-12",
+    address: "Okhla Phase-III Industrial Area, New Delhi, DL"
+  },
+
+  // 3. Retailer (Dispensing Pharmacy)
+  {
+    id: "ret-001",
+    name: "Raj Pharmacy Jaipur Central",
+    type: "RETAILER",
+    licenseNumber: "RET-RJ-2022-5501",
+    city: "Jaipur",
+    state: "Rajasthan",
+    complianceScore: 96,
+    active: true,
+    contactEmail: "raj@pharmacy.in",
+    contactPhone: "+91 141 237 8899",
+    registeredDate: "2022-05-10",
+    address: "Shop 14, MI Road, Near Raj Mandir, Jaipur, RJ"
+  },
+
+  // 4. Bio-Medical Waste Facility (CBWTF Incinerator Plant)
+  {
+    id: "wst-001",
+    name: "EcoWaste Management CBWTF",
+    type: "WASTE_FACILITY",
+    licenseNumber: "CBWTF-WST-4001-MH",
+    city: "Nagpur",
+    state: "Maharashtra",
+    complianceScore: 100,
+    active: true,
+    contactEmail: "admin@ecowaste.in",
+    contactPhone: "+91 712 289 9000",
+    registeredDate: "2020-03-01",
+    address: "Butibori Industrial Area, Nagpur, Maharashtra (Kiln #1 & #2 Dual-Chamber)"
+  }
+];
 
 export const MOCK_USERS = {
   RETAILER: {

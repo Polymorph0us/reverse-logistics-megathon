@@ -17,9 +17,10 @@ import type {
   FinalIncinerationRecord,
   KilnTelemetryReading,
   KilnWeightVerification,
+  OrganizationNode,
 } from "./types";
 import { useSharedStore } from "@/store/useSharedStore";
-import { MOCK_USERS } from "@/store/seedData";
+import { MOCK_USERS, INITIAL_ORGANIZATIONS } from "@/store/seedData";
 
 // Helper for simulated network delay
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -62,20 +63,19 @@ export const getDashboardKPIs = async (): Promise<DashboardKPIs> => {
 // TODO: replace with real API call to GET /api/regulator/dashboard
 export const getRegulatorDashboard = async (): Promise<RegulatorDashboard> => {
   await delay(400);
-  ensureSeeded();
   const state = useSharedStore.getState();
   
   return {
-    totalManufacturers: 2,
-    totalDistributors: 5,
-    totalRetailers: 12,
+    totalManufacturers: 1,
+    totalDistributors: 1,
+    totalRetailers: 1,
     totalTrackedBatches: state.batches.length,
     expiredBatches: state.batches.filter(b => b.currentStatus === 'EXPIRED').length,
     returnsInProgress: state.returns.filter(r => r.status !== 'COMPLETED').length,
     destroyedBatches: state.batches.filter(b => b.currentStatus === 'DESTROYED').length,
     fraudAlerts: state.fraudAlerts.length,
     criticalAlerts: state.fraudAlerts.filter(a => a.severity === 'CRITICAL').length,
-    openInvestigations: 2,
+    openInvestigations: state.fraudAlerts.length,
   };
 };
 
@@ -88,11 +88,34 @@ export const getBatches = async (): Promise<BatchPassport[]> => {
 
 // TODO: replace with real API call to GET /api/batches/:batchId
 export const getBatchPassport = async (batchId: string): Promise<BatchPassport> => {
-  await delay(500);
+  await delay(300);
   ensureSeeded();
-  const batch = useSharedStore.getState().batches.find(b => b.batchId === batchId);
-  if (!batch) throw new Error("Batch not found");
-  return batch;
+  const state = useSharedStore.getState();
+  const clean = (batchId || "").trim().toLowerCase();
+  
+  // Look up by batchId or batchNumber
+  const batch = state.batches.find(b => 
+    b.batchId?.toLowerCase() === clean || 
+    b.batchNumber?.toLowerCase() === clean
+  );
+  if (batch) return batch;
+
+  // Fallback: check matching return
+  const matchingReturn = state.returns.find(r => 
+    r.batchId?.toLowerCase() === clean || 
+    r.batchNumber?.toLowerCase() === clean
+  );
+  if (matchingReturn) {
+    const returnBatch = state.batches.find(b => 
+      b.batchId === matchingReturn.batchId || 
+      b.batchNumber === matchingReturn.batchNumber
+    );
+    if (returnBatch) return returnBatch;
+  }
+
+  // Graceful fallback to first batch if available
+  if (state.batches.length > 0) return state.batches[0];
+  throw new Error("Batch not found");
 };
 
 // TODO: replace with real API call to POST /api/returns
@@ -130,7 +153,7 @@ export const createReturn = async (
     initiatedBy: "City Pharmacy (Jaipur)",
     createdAt: new Date().toISOString(),
     pickupStatus: "PENDING",
-    condition: details?.condition || "Intact / Original Pack",
+    condition: details?.condition || reason || "Intact / Original Pack",
     consignmentCode,
     sealToken,
     grossWeightGrams,
@@ -744,7 +767,7 @@ export const generateEWTN = async (
   hazmatLicenseNumber: string,
   scheduledPickupStart: string,
   scheduledPickupEnd: string,
-  cbwtfFacilityKey: "ECOWASTE" | "GREENSHIELD"
+  cbwtfFacilityKey: string
 ): Promise<ElectronicWasteTransferNote> => {
   await delay(600);
   ensureSeeded();
@@ -753,7 +776,7 @@ export const generateEWTN = async (
   if (!tag) throw new Error(`Denaturing tag ${denaturedTagId} not found.`);
   if (tag.status !== "CONFIRMED") throw new Error("Denaturing tag must be CONFIRMED before scheduling pickup.");
 
-  const facilities: Record<"ECOWASTE" | "GREENSHIELD", { name: string; regNumber: string; address: string }> = {
+  const facilities: Record<string, { name: string; regNumber: string; address: string }> = {
     ECOWASTE: {
       name: "EcoWaste Solutions CBWTF",
       regNumber: "CBWTF-RAJ-2019-0042",
@@ -766,7 +789,13 @@ export const generateEWTN = async (
     },
   };
 
-  const facility = facilities[cbwtfFacilityKey];
+  const orgFacility = state.organizations.find(o => o.id === cbwtfFacilityKey || o.licenseNumber === cbwtfFacilityKey);
+  const facility = facilities[cbwtfFacilityKey] || {
+    name: orgFacility?.name || "EcoWaste Solutions CBWTF",
+    regNumber: orgFacility?.licenseNumber || "CBWTF-RAJ-2019-0042",
+    address: orgFacility?.address || "Plot 14, RIICO Industrial Area Phase II, Jaipur, Rajasthan 302022",
+  };
+
   const ewtnId = `EWTN-${new Date().getFullYear()}-RAJ-${Math.floor(1000 + Math.random() * 9000)}`;
 
   let ewtn: ElectronicWasteTransferNote = {
@@ -1242,3 +1271,135 @@ export const getFinalIncinerationRecords = async (): Promise<FinalIncinerationRe
   ensureSeeded();
   return useSharedStore.getState().finalIncinerationRecords;
 };
+
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Organizations Subsystem (4 Sectors: Manufacturer, Distributor, Retailer, Waste Facility)
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+export const getOrganizations = async (): Promise<OrganizationNode[]> => {
+  ensureSeeded();
+
+  const DUMMY_MOCK_NAMES = new Set([
+    "PharmaCorp India Innovations",
+    "MediLife Makers Private Limited",
+    "Cipla Therapeutics Labs",
+    "Regional Med Supply Logistics",
+    "West Coast Pharma Hub",
+    "Apex Cold-Chain Logistics Hub",
+    "City Pharmacy Chemist & Druggist",
+    "HealthPlus Medicare Corner",
+    "Corner Drugstore & Dispensary",
+    "Apollo Pharmacy Super Centre",
+    "GreenEarth Bio-Incinerators Ltd",
+    "CleanCare Enviro Systems CBWTF",
+    "PharmaCorp Inc",
+    "MediLife Makers",
+    "National Distributors",
+    "Regional Med Supply",
+    "West Coast Logistics",
+    "City Pharmacy",
+    "HealthPlus Store",
+    "Corner Drugstore",
+    "Wellness Meds",
+    "EcoWaste Disposal",
+    "CDSCO Regulator"
+  ]);
+  const DUMMY_MOCK_IDS = new Set([
+    'mfr-002', 'mfr-003', 'mfr-004', 
+    'dist-002', 'dist-003', 'dist-004', 
+    'ret-002', 'ret-003', 'ret-004', 'ret-005', 
+    'wst-002', 'wst-003'
+  ]);
+
+  const isDummy = (o: { id?: string; name?: string }) => 
+    (o.id && DUMMY_MOCK_IDS.has(o.id)) || (o.name && DUMMY_MOCK_NAMES.has(o.name));
+
+  try {
+    const res = await fetch("/api/organizations");
+    if (res.ok) {
+      const backendOrgs = await res.json();
+      if (Array.isArray(backendOrgs) && backendOrgs.length > 0) {
+        // Map backend entities to OrganizationNode, filtering out dummy seeder rows
+        const mapped: OrganizationNode[] = backendOrgs
+          .filter(bo => !isDummy(bo))
+          .map((bo: any) => ({
+            id: String(bo.id),
+            name: bo.name,
+            type: bo.type,
+            licenseNumber: bo.licenseNumber || "N/A",
+            city: bo.city || "Unknown",
+            state: bo.state || "Unknown",
+            complianceScore: bo.complianceScore ?? 100,
+            active: bo.active ?? true,
+            contactEmail: bo.contactEmail || `contact@${bo.name.toLowerCase().replace(/[^a-z0-9]/g, "")}.com`,
+            contactPhone: bo.contactPhone || "+91 80000 00000",
+            registeredDate: bo.registeredDate || "2023-01-01",
+            address: bo.address || `${bo.city}, ${bo.state}`,
+          }));
+
+        // Merge locally created ones, also filtering dummy rows
+        const localOrgs = (useSharedStore.getState().organizations || []).filter(o => !isDummy(o));
+        const mergedMap = new Map<string, OrganizationNode>();
+        localOrgs.forEach(o => mergedMap.set(o.licenseNumber || o.name, o));
+        mapped.forEach(o => mergedMap.set(o.licenseNumber || o.name, o));
+        const mergedList = Array.from(mergedMap.values());
+        
+        // Update the store with the cleaned list
+        useSharedStore.setState({ organizations: mergedList });
+        return mergedList;
+      }
+    }
+  } catch (e) {
+    console.warn("Backend /api/organizations unreachable, using local store:", e);
+  }
+
+  const cleaned = (useSharedStore.getState().organizations || []).filter(o => !isDummy(o));
+  if (cleaned.length === 0) {
+    return INITIAL_ORGANIZATIONS;
+  }
+  useSharedStore.setState({ organizations: cleaned });
+  return cleaned;
+};
+
+export const createOrganization = async (org: Omit<OrganizationNode, "id">): Promise<OrganizationNode> => {
+  const newOrg: OrganizationNode = {
+    ...org,
+    id: `ORG-${Date.now().toString(36).toUpperCase()}`,
+    complianceScore: org.complianceScore ?? 100,
+    active: org.active ?? true,
+    registeredDate: org.registeredDate || new Date().toISOString().split("T")[0],
+  };
+
+  // Attempt backend persistence
+  try {
+    const res = await fetch("/api/organizations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: newOrg.name,
+        type: newOrg.type,
+        licenseNumber: newOrg.licenseNumber,
+        city: newOrg.city,
+        state: newOrg.state,
+        complianceScore: newOrg.complianceScore,
+        active: newOrg.active,
+      }),
+    });
+    if (res.ok) {
+      const saved = await res.json();
+      const nodeWithId: OrganizationNode = {
+        ...newOrg,
+        id: String(saved.id),
+      };
+      useSharedStore.getState().addOrganization(nodeWithId);
+      return nodeWithId;
+    }
+  } catch (e) {
+    console.warn("Backend save failed, saved to local store:", e);
+  }
+
+  useSharedStore.getState().addOrganization(newOrg);
+  return newOrg;
+};
+

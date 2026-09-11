@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { BatchPassport, FraudAlert, Notification, ReturnRequest, DestructionCertificate, TimelineEvent, MasterConsignment, DenaturedBatchTag, ElectronicWasteTransferNote, IncinerationLog, FinalIncinerationRecord } from '@/api/types';
-import { SEED_BATCHES, SEED_ALERTS, SEED_RETURNS, SEED_DESTRUCTIONS } from './seedData';
+import type { BatchPassport, FraudAlert, Notification, ReturnRequest, DestructionCertificate, TimelineEvent, MasterConsignment, DenaturedBatchTag, ElectronicWasteTransferNote, IncinerationLog, FinalIncinerationRecord, OrganizationNode } from '@/api/types';
+import { INITIAL_ORGANIZATIONS, SEED_BATCHES } from './seedData';
 
 interface SharedState {
   batches: BatchPassport[];
@@ -14,6 +14,7 @@ interface SharedState {
   ewtns: ElectronicWasteTransferNote[];     // Layer 4
   incinerationLogs: IncinerationLog[];      // Layer 4
   finalIncinerationRecords: FinalIncinerationRecord[]; // Layer 5
+  organizations: OrganizationNode[];
   
   // Actions
   addBatch: (batch: BatchPassport) => void;
@@ -23,6 +24,7 @@ interface SharedState {
   addFraudAlert: (alert: FraudAlert) => void;
   addNotification: (notif: Notification) => void;
   markNotificationRead: (id: string) => void;
+  clearNotifications: () => void;
   
   addReturn: (req: ReturnRequest) => void;
   updateReturn: (returnId: string, updates: Partial<ReturnRequest>) => void;
@@ -41,12 +43,18 @@ interface SharedState {
   // Layer 5 actions
   addFinalIncinerationRecord: (rec: FinalIncinerationRecord) => void;
   
+  // Organization actions
+  addOrganization: (org: OrganizationNode) => void;
+  updateOrganization: (id: string, updates: Partial<OrganizationNode>) => void;
+  deleteOrganization: (id: string) => void;
+
+  clearAllData: () => void;
   seedIfEmpty: () => void;
 }
 
 export const useSharedStore = create<SharedState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       batches: [],
       fraudAlerts: [],
       notifications: [],
@@ -57,7 +65,29 @@ export const useSharedStore = create<SharedState>()(
       ewtns: [],
       incinerationLogs: [],
       finalIncinerationRecords: [],
+      organizations: INITIAL_ORGANIZATIONS,
       
+      clearAllData: () => {
+        try {
+          localStorage.removeItem('rxtrack-shared-state');
+        } catch (e) {
+          console.error(e);
+        }
+        set({
+          batches: [],
+          fraudAlerts: [],
+          notifications: [],
+          returns: [],
+          destructions: [],
+          masterConsignments: [],
+          denaturedTags: [],
+          ewtns: [],
+          incinerationLogs: [],
+          finalIncinerationRecords: [],
+          organizations: INITIAL_ORGANIZATIONS,
+        });
+      },
+
       addBatch: (batch) => set((state) => ({ batches: [...state.batches, batch] })),
       updateBatch: (batchId, updates) => set((state) => ({
         batches: state.batches.map(b => b.batchId === batchId ? { ...b, ...updates } : b)
@@ -71,6 +101,7 @@ export const useSharedStore = create<SharedState>()(
       markNotificationRead: (id) => set((state) => ({
         notifications: state.notifications.map(n => n.id === id ? { ...n, read: true } : n)
       })),
+      clearNotifications: () => set({ notifications: [] }),
       
       addReturn: (req) => set((state) => ({ returns: [req, ...state.returns] })),
       updateReturn: (returnId, updates) => set((state) => ({
@@ -95,17 +126,41 @@ export const useSharedStore = create<SharedState>()(
       // Layer 5
       addFinalIncinerationRecord: (rec) => set((state) => ({ finalIncinerationRecords: [rec, ...state.finalIncinerationRecords] })),
       
+      // Organization actions
+      addOrganization: (org) => set((state) => ({
+        organizations: [org, ...(state.organizations || [])]
+      })),
+      updateOrganization: (id, updates) => set((state) => ({
+        organizations: (state.organizations || []).map(o => o.id === id ? { ...o, ...updates } : o)
+      })),
+      deleteOrganization: (id) => set((state) => ({
+        organizations: (state.organizations || []).filter(o => o.id !== id)
+      })),
+
       seedIfEmpty: () => {
-        const state = get();
-        if (state.batches.length === 0) {
-          set({
-            batches: SEED_BATCHES,
-            fraudAlerts: SEED_ALERTS,
-            returns: SEED_RETURNS,
-            destructions: SEED_DESTRUCTIONS,
-            notifications: []
-          });
-        }
+        const DUMMY_MOCK_IDS = new Set([
+          'mfr-002', 'mfr-003', 'mfr-004', 
+          'dist-002', 'dist-003', 'dist-004', 
+          'ret-002', 'ret-003', 'ret-004', 'ret-005', 
+          'wst-002', 'wst-003'
+        ]);
+
+        set((state) => {
+          const updates: Partial<SharedState> = {};
+          if (!state.batches || state.batches.length === 0) {
+            updates.batches = SEED_BATCHES;
+          }
+          const existing = state.organizations || [];
+          const cleaned = existing.filter(o => !DUMMY_MOCK_IDS.has(o.id));
+          if (cleaned.length === 0) {
+            updates.organizations = INITIAL_ORGANIZATIONS;
+          } else if (cleaned.length !== existing.length) {
+            updates.organizations = cleaned;
+          }
+          // Remove old mock notification history
+          updates.notifications = [];
+          return updates;
+        });
       }
     }),
     {

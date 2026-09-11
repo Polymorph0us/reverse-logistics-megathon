@@ -357,17 +357,6 @@ export function Consolidation() {
           </Card>
         </div>
       </div>
-
-      {/* Info panel */}
-      <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg text-xs text-purple-800 space-y-1">
-        <div className="font-bold flex items-center gap-1.5"><GitBranch className="w-3.5 h-3.5" /> How Merkle Sealing Works</div>
-        <ul className="list-disc list-inside space-y-0.5 text-purple-700">
-          <li>Each box gets a <strong>leaf hash</strong> = SHA-256(returnId | batchNumber | grossWeight | sealToken)</li>
-          <li>Pairs of leaf hashes are recursively hashed until a single <strong>Merkle Root</strong> remains</li>
-          <li>The root is logged in the key-value hash chain — any tampered bag invalidates the root at OEM intake</li>
-          <li>Disputed boxes (weight delta &gt; 2%) are permanently <strong>locked out</strong> until resolved</li>
-        </ul>
-      </div>
     </div>
   )
 }

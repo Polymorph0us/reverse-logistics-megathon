@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react"
 import { useNavigate } from "react-router-dom"
 import { getBatches } from "@/api/mockApi"
 import type { BatchPassport } from "@/api/types"
+import { useSharedStore } from "@/store/useSharedStore"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -18,7 +19,9 @@ import {
   CheckCircle2, 
   ExternalLink, 
   Filter,
-  Layers
+  Layers,
+  PlusCircle,
+  X
 } from "lucide-react"
 
 export function RetailerInventory() {
@@ -26,16 +29,89 @@ export function RetailerInventory() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("ALL")
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [formData, setFormData] = useState({
+    name: "",
+    genericName: "",
+    batchNumber: "",
+    manufacturer: "",
+    expiryDate: "",
+    mfgDate: "",
+    quantity: "100",
+    unit: "STRIPS",
+    status: "ACTIVE"
+  })
   const navigate = useNavigate()
 
   useEffect(() => {
     setLoading(true)
     getBatches().then((data) => {
-      // Filter batches belonging to retailer or relevant to retail stock
       setBatches(data)
       setLoading(false)
     })
   }, [])
+
+  const handleAddBatch = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!formData.name.trim() || !formData.batchNumber.trim()) return
+
+    const now = new Date().toISOString()
+    const expiryIso = formData.expiryDate 
+      ? new Date(formData.expiryDate).toISOString() 
+      : new Date(Date.now() + 30 * 86400000).toISOString()
+    const mfgIso = formData.mfgDate 
+      ? new Date(formData.mfgDate).toISOString() 
+      : new Date(Date.now() - 180 * 86400000).toISOString()
+
+    const newBatch: BatchPassport = {
+      batchId: `BATCH-${Date.now().toString().slice(-6)}`,
+      batchNumber: formData.batchNumber.toUpperCase().trim(),
+      product: {
+        productId: `PROD-${Date.now().toString().slice(-4)}`,
+        name: formData.name.trim(),
+        genericName: formData.genericName.trim() || formData.name.trim(),
+        manufacturer: formData.manufacturer.trim() || "National Pharma Ltd",
+      },
+      manufacturingDate: mfgIso,
+      expiryDate: expiryIso,
+      currentStatus: formData.status as any,
+      currentQuantity: Number(formData.quantity) || 100,
+      originalQuantity: Number(formData.quantity) || 100,
+      unit: formData.unit,
+      currentOwner: {
+        organizationId: "ORG-001",
+        organizationName: "Raj Pharmacy (Jaipur)",
+        role: "RETAILER",
+      },
+      riskLevel: "LOW",
+      riskScore: 0,
+      timeline: [
+        {
+          eventId: `EV-${Date.now().toString().slice(-4)}`,
+          eventType: "BATCH_CREATED",
+          status: "COMPLETED",
+          timestamp: now,
+          actor: formData.manufacturer.trim() || "Manufacturer",
+          location: "Pharmacy Inward Dock"
+        }
+      ]
+    }
+
+    useSharedStore.getState().addBatch(newBatch)
+    setBatches(prev => [newBatch, ...prev])
+    setIsAddModalOpen(false)
+    setFormData({
+      name: "",
+      genericName: "",
+      batchNumber: "",
+      manufacturer: "",
+      expiryDate: "",
+      mfgDate: "",
+      quantity: "100",
+      unit: "STRIPS",
+      status: "ACTIVE"
+    })
+  }
 
   // Filter batches based on search query and status filter
   const filteredBatches = useMemo(() => {
@@ -78,6 +154,17 @@ export function RetailerInventory() {
             Real-time batch tracking, stock integrity, and automated reverse-logistics lifecycle.
           </p>
         </div>
+
+        <div className="flex items-center gap-3">
+          <Button
+            size="sm"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm cursor-pointer"
+            onClick={() => setIsAddModalOpen(true)}
+          >
+            <PlusCircle className="w-4 h-4 mr-1.5" />
+            Add Medicine Batch
+          </Button>
+        </div>
       </div>
 
       {/* KPI Cards */}
@@ -89,7 +176,6 @@ export function RetailerInventory() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">{totalCount}</div>
-            <p className="text-xs text-gray-500 mt-1">Tracked across supply chain</p>
           </CardContent>
         </Card>
 
@@ -100,7 +186,6 @@ export function RetailerInventory() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-emerald-600">{activeCount}</div>
-            <p className="text-xs text-gray-500 mt-1">Verified safe for dispensing</p>
           </CardContent>
         </Card>
 
@@ -111,7 +196,6 @@ export function RetailerInventory() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-amber-600">{expiringSoonCount}</div>
-            <p className="text-xs text-amber-700 font-medium mt-1">Eligible for supplier recall</p>
           </CardContent>
         </Card>
 
@@ -124,9 +208,6 @@ export function RetailerInventory() {
             <div className="text-2xl font-bold text-red-600">
               {expiredCount + returnInitiatedCount}
             </div>
-            <p className="text-xs text-red-600 font-medium mt-1">
-              {returnInitiatedCount} returns in progress
-            </p>
           </CardContent>
         </Card>
       </div>
@@ -277,20 +358,34 @@ export function RetailerInventory() {
               ) : filteredBatches.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-12 text-gray-500">
-                    <div className="max-w-sm mx-auto flex flex-col items-center gap-2">
-                      <Package className="w-12 h-12 text-gray-300" />
-                      <p className="font-medium text-gray-700">No matching medicine batches found</p>
-                      <p className="text-xs text-gray-400">
-                        Try adjusting your search criteria or clear the filters.
+                    <div className="max-w-md mx-auto flex flex-col items-center gap-3">
+                      <Package className="w-14 h-14 text-emerald-300" />
+                      <p className="font-semibold text-gray-800 text-lg">
+                        {batches.length === 0 ? "Inventory is currently empty" : "No matching medicine batches found"}
                       </p>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => { setSearchQuery(""); setStatusFilter("ALL"); }}
-                        className="mt-2 text-xs"
-                      >
-                        Reset Filters
-                      </Button>
+                      <p className="text-xs text-gray-500 max-w-sm">
+                        {batches.length === 0 
+                          ? "All mock batches have been cleared. Click below to add your new medicine batch."
+                          : "Try adjusting your search criteria or clear the filters."}
+                      </p>
+                      {batches.length === 0 ? (
+                        <Button 
+                          onClick={() => setIsAddModalOpen(true)}
+                          className="mt-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                        >
+                          <PlusCircle className="w-4 h-4 mr-1.5" />
+                          Add First Medicine Batch
+                        </Button>
+                      ) : (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => { setSearchQuery(""); setStatusFilter("ALL"); }}
+                          className="mt-2 text-xs"
+                        >
+                          Reset Filters
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -385,6 +480,143 @@ export function RetailerInventory() {
           </Table>
         </div>
       </Card>
+
+      {/* Add Medicine Batch Modal */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full border border-gray-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 bg-gradient-to-r from-emerald-600 to-teal-700 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <PlusCircle className="w-5 h-5 text-emerald-200" />
+                <h3 className="font-semibold text-lg">Add New Medicine Batch</h3>
+              </div>
+              <button 
+                onClick={() => setIsAddModalOpen(false)}
+                className="text-emerald-100 hover:text-white p-1 rounded-md transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddBatch} className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-700">Medicine Name *</label>
+                  <Input
+                    required
+                    placeholder="e.g. Augmentin 625 Duo"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-700">Generic Formula</label>
+                  <Input
+                    placeholder="e.g. Amoxicillin + Clavulanic"
+                    value={formData.genericName}
+                    onChange={(e) => setFormData({ ...formData, genericName: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-700">Batch Number *</label>
+                  <Input
+                    required
+                    placeholder="e.g. BATCH-AUG-9941"
+                    value={formData.batchNumber}
+                    onChange={(e) => setFormData({ ...formData, batchNumber: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-700">Manufacturer</label>
+                  <Input
+                    placeholder="e.g. PharmaCorp India"
+                    value={formData.manufacturer}
+                    onChange={(e) => setFormData({ ...formData, manufacturer: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-700">Expiry Date *</label>
+                  <Input
+                    type="date"
+                    required
+                    value={formData.expiryDate}
+                    onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-700">Mfg Date</label>
+                  <Input
+                    type="date"
+                    value={formData.mfgDate}
+                    onChange={(e) => setFormData({ ...formData, mfgDate: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-700">Quantity</label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={formData.quantity}
+                    onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-700">Unit</label>
+                  <select
+                    className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                    value={formData.unit}
+                    onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                  >
+                    <option value="STRIPS">STRIPS</option>
+                    <option value="BOTTLES">BOTTLES</option>
+                    <option value="BOXES">BOXES</option>
+                    <option value="VIALS">VIALS</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-700">Initial Status</label>
+                  <select
+                    className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  >
+                    <option value="ACTIVE">ACTIVE</option>
+                    <option value="EXPIRING_SOON">EXPIRING SOON</option>
+                    <option value="EXPIRED">EXPIRED</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsAddModalOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  size="sm"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
+                  Save & Add to Inventory
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
