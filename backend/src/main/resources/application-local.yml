@@ -1,9 +1,9 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5434/reversechaindb
+    url: jdbc:postgresql://localhost:5433/reversechaindb
     driver-class-name: org.postgresql.Driver
-    username: postgres
-    password: Rpharish@1
+    username: rc_user
+    password: rc_password
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
