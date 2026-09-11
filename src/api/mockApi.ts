@@ -1289,8 +1289,11 @@ export const getOrganizations = async (): Promise<OrganizationNode[]> => {
         mapped.forEach(o => mergedMap.set(o.licenseNumber || o.name, o));
         const mergedList = Array.from(mergedMap.values());
         
-        // Update the store with the cleaned list
-        useSharedStore.setState({ organizations: mergedList });
+        // Update the store only if the items actually changed
+        const currentOrgs = useSharedStore.getState().organizations || [];
+        if (currentOrgs.length !== mergedList.length || currentOrgs.some((o, idx) => o.id !== mergedList[idx]?.id)) {
+          useSharedStore.setState({ organizations: mergedList });
+        }
         return mergedList;
       }
     }
@@ -1302,7 +1305,10 @@ export const getOrganizations = async (): Promise<OrganizationNode[]> => {
   if (cleaned.length === 0) {
     return INITIAL_ORGANIZATIONS;
   }
-  useSharedStore.setState({ organizations: cleaned });
+  const currentOrgs = useSharedStore.getState().organizations || [];
+  if (currentOrgs.length !== cleaned.length) {
+    useSharedStore.setState({ organizations: cleaned });
+  }
   return cleaned;
 };
 

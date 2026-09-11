@@ -437,3 +437,50 @@ export const MOCK_USERS = {
     organizationName: "Platform Administration",
   },
 };
+
+export const SEED_FRAUD_ALERTS: FraudAlert[] = [
+  {
+    alertId: "ALT-FRD-9001",
+    type: "DESTROYED_BATCH_REENTRY",
+    severity: "CRITICAL",
+    batchId: "BAT-003",
+    batchNumber: "BATCH-AUG-3321",
+    location: "Mumbai Terminal B Market",
+    organization: "Rogue POS Terminal #402",
+    message: "CRITICAL ALERT: Physical counterfeit or diverted strip scanned at retail POS after official CBWTF destruction certificate was issued.",
+    detectedAt: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
+  },
+  {
+    alertId: "ALT-FRD-9002",
+    type: "EXPIRED_BATCH_SALE",
+    severity: "HIGH",
+    batchId: "BAT-002",
+    batchNumber: "BATCH-AZM-4402",
+    location: "Jaipur Dispensary Node",
+    organization: "Regional Med Supply Hub",
+    message: "Dispensing blocked: Batch past statutory shelf-life scanned during customer checkout attempt.",
+    detectedAt: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
+  },
+  {
+    alertId: "ALT-FRD-9003",
+    type: "QUANTITY_MISMATCH",
+    severity: "HIGH",
+    batchId: "BAT-001",
+    batchNumber: "BATCH-CRX-9901",
+    location: "Delhi Inbound Logistics Gate",
+    organization: "ABC Distributors Central Logistics",
+    message: "Physical inbound manifest reported 420 strips against cryptographically attested dispatch manifest of 500 strips (-80 units missing).",
+    detectedAt: new Date(Date.now() - 5 * 3600 * 1000).toISOString(),
+  },
+  {
+    alertId: "ALT-FRD-9004",
+    type: "IDENTITY_MISMATCH",
+    severity: "MEDIUM",
+    batchId: "BAT-001",
+    batchNumber: "BATCH-CRX-9901",
+    location: "Nagpur Sorting Center",
+    organization: "Unverified Courier Transport",
+    message: "Invalid digital signature detected on transit handoff. Driver key failed CDSCO PKI verification.",
+    detectedAt: new Date(Date.now() - 14 * 3600 * 1000).toISOString(),
+  }
+];

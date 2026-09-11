@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react"
 import { useSearchParams, useNavigate } from "react-router-dom"
 import { useSharedStore } from "@/store/useSharedStore"
 import { getOrganizations, createOrganization } from "@/api/mockApi"
+import { INITIAL_ORGANIZATIONS } from "@/store/seedData"
 import type { OrganizationNode, SectorType } from "@/api/types"
 import { 
   Building2, 
@@ -55,8 +56,11 @@ export function OrganizationsDirectory() {
   const returns = useSharedStore(state => state.returns)
   const destructions = useSharedStore(state => state.destructions)
 
-  const [orgs, setOrgs] = useState<OrganizationNode[]>([])
-  const [loading, setLoading] = useState(true)
+  const orgs = useMemo(() => {
+    return (sharedOrgs && sharedOrgs.length > 0) ? sharedOrgs : INITIAL_ORGANIZATIONS;
+  }, [sharedOrgs]);
+
+  const [loading] = useState(false)
   const [searchParams] = useSearchParams()
   const [activeTab, setActiveTab] = useState<"ALL" | SectorType>("ALL")
   const [searchQuery, setSearchQuery] = useState("")
@@ -68,56 +72,86 @@ export function OrganizationsDirectory() {
   const [submitting, setSubmitting] = useState(false)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
-  // Resolve all drugs/batches linked to an organization
-  const getOrgBatches = (org: OrganizationNode) => {
-    const orgName = (org.name || "").toLowerCase()
-    const orgId = (org.id || "").toLowerCase()
-    const city = (org.city || "").toLowerCase()
+  // Precompute organization-to-batches map for instant O(1) lookups
+  const orgBatchesMap = useMemo(() => {
+    const map = new Map<string, typeof batches>()
 
-    const matched = batches.filter(b => {
-      const mfr = (b.product?.manufacturer || "").toLowerCase()
-      const ownerName = (b.currentOwner?.organizationName || "").toLowerCase()
-      const ownerId = (b.currentOwner?.organizationId || "").toLowerCase()
+    const computeBatches = (org: OrganizationNode) => {
+      const orgName = (org.name || "").toLowerCase()
+      const orgId = (org.id || "").toLowerCase()
+      const city = (org.city || "").toLowerCase()
 
-      if (ownerId === orgId || ownerName.includes(orgName) || orgName.includes(ownerName)) return true
-      if (org.type === "MANUFACTURER" && (mfr.includes(orgName) || orgName.includes(mfr))) return true
+      const matched = batches.filter(b => {
+        const mfr = (b.product?.manufacturer || "").toLowerCase()
+        const ownerName = (b.currentOwner?.organizationName || "").toLowerCase()
+        const ownerId = (b.currentOwner?.organizationId || "").toLowerCase()
 
-      const inTimeline = b.timeline?.some(t => {
-        const actor = (t.actor || "").toLowerCase()
-        const loc = (t.location || "").toLowerCase()
-        return actor.includes(orgName) || orgName.includes(actor) || (city && loc.includes(city))
+        if (ownerId === orgId || (ownerName && orgName && (ownerName.includes(orgName) || orgName.includes(ownerName)))) return true
+        if (org.type === "MANUFACTURER" && mfr && orgName && (mfr.includes(orgName) || orgName.includes(mfr))) return true
+
+        const inTimeline = b.timeline?.some(t => {
+          const actor = (t.actor || "").toLowerCase()
+          const loc = (t.location || "").toLowerCase()
+          return (actor && orgName && (actor.includes(orgName) || orgName.includes(actor))) || (city && loc && loc.includes(city))
+        })
+        if (inTimeline) return true
+
+        const inReturns = returns.some(r => r.batchId === b.batchId && (
+          (r.initiatedBy && (r.initiatedBy.toLowerCase().includes(orgName) || r.initiatedBy === org.id)) ||
+          (r.distributor && (r.distributor.toLowerCase().includes(orgName) || r.distributor === org.id))
+        ))
+        if (inReturns) return true
+
+        const inDestruction = destructions.some(d => (d.batchId === b.batchId || d.linkedBatchNumbers?.includes(b.batchNumber)) && (
+          (d.facility?.name && d.facility.name.toLowerCase().includes(orgName)) ||
+          d.facility?.regNumber === org.licenseNumber
+        ))
+        if (inDestruction) return true
+
+        return false
       })
-      if (inTimeline) return true
 
-      const inReturns = returns.some(r => r.batchId === b.batchId && (
-        (r.initiatedBy && (r.initiatedBy.toLowerCase().includes(orgName) || r.initiatedBy === org.id)) ||
-        (r.distributor && (r.distributor.toLowerCase().includes(orgName) || r.distributor === org.id))
-      ))
-      if (inReturns) return true
+      if (matched.length > 0) return matched
 
-      const inDestruction = destructions.some(d => (d.batchId === b.batchId || d.linkedBatchNumbers?.includes(b.batchNumber)) && (
-        (d.facility?.name && d.facility.name.toLowerCase().includes(orgName)) ||
-        d.facility?.regNumber === org.licenseNumber
-      ))
-      if (inDestruction) return true
+      // Sector-relevant batches fallback so regulator can always inspect relevant passports
+      if (org.type === "MANUFACTURER") {
+        return batches.filter(b => b.currentStatus !== "DESTROYED")
+      } else if (org.type === "DISTRIBUTOR") {
+        return batches.filter(b => ["WITH_DISTRIBUTOR", "RETURN_INITIATED", "ACTIVE"].includes(b.currentStatus))
+      } else if (org.type === "RETAILER") {
+        return batches.filter(b => ["ACTIVE", "EXPIRING_SOON", "EXPIRED", "RETURN_INITIATED"].includes(b.currentStatus))
+      } else if (org.type === "WASTE_FACILITY") {
+        return batches.filter(b => ["CONDITION_DENATURED_CONDEMNED", "SCHEDULED_FOR_DESTRUCTION", "DESTROYED"].includes(b.currentStatus))
+      }
+      return batches
+    }
 
-      return false
+    orgs.forEach(o => {
+      map.set(o.id, computeBatches(o))
     })
 
-    if (matched.length > 0) return matched
+    return map
+  }, [orgs, batches, returns, destructions])
 
-    // Sector-relevant batches fallback so regulator can always inspect relevant passports
-    if (org.type === "MANUFACTURER") {
-      return batches.filter(b => b.currentStatus !== "DESTROYED")
-    } else if (org.type === "DISTRIBUTOR") {
-      return batches.filter(b => ["WITH_DISTRIBUTOR", "RETURN_INITIATED", "ACTIVE"].includes(b.currentStatus))
-    } else if (org.type === "RETAILER") {
-      return batches.filter(b => ["ACTIVE", "EXPIRING_SOON", "EXPIRED", "RETURN_INITIATED"].includes(b.currentStatus))
-    } else if (org.type === "WASTE_FACILITY") {
-      return batches.filter(b => ["CONDITION_DENATURED_CONDEMNED", "SCHEDULED_FOR_DESTRUCTION", "DESTROYED"].includes(b.currentStatus))
-    }
-    return batches
+  const getOrgBatches = (org: OrganizationNode) => {
+    return orgBatchesMap.get(org.id) || []
   }
+
+  const selectedOrgBatches = useMemo(() => {
+    if (!selectedOrg) return []
+    return orgBatchesMap.get(selectedOrg.id) || []
+  }, [selectedOrg, orgBatchesMap])
+
+  const filteredOrgBatches = useMemo(() => {
+    if (!drugSearchQuery.trim()) return selectedOrgBatches
+    const q = drugSearchQuery.toLowerCase()
+    return selectedOrgBatches.filter(b => 
+      (b.product?.name || "").toLowerCase().includes(q) ||
+      (b.product?.genericName || "").toLowerCase().includes(q) ||
+      (b.batchNumber || "").toLowerCase().includes(q) ||
+      (b.currentStatus || "").toLowerCase().includes(q)
+    )
+  }, [selectedOrgBatches, drugSearchQuery])
 
   // Form State for new onboarding
   const [formData, setFormData] = useState({
@@ -151,23 +185,10 @@ export function OrganizationsDirectory() {
     }
   }, [searchParams]);
 
-  // Load from API / Shared Store
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const data = await getOrganizations();
-      setOrgs(data);
-    } catch (e) {
-      console.error(e);
-      setOrgs(sharedOrgs || []);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Sync from backend on initial mount once
   useEffect(() => {
-    loadData();
-  }, [sharedOrgs]);
+    getOrganizations().catch(e => console.error(e));
+  }, []);
 
   // Sector Counts
   const sectorCounts = useMemo(() => {
@@ -256,7 +277,6 @@ export function OrganizationsDirectory() {
         complianceScore: 98,
       });
 
-      await loadData();
       setTimeout(() => setSuccessMsg(null), 5000);
     } catch (err) {
       console.error(err);
@@ -678,37 +698,28 @@ export function OrganizationsDirectory() {
       )}
 
       {/* Organization Details & Drug Passports Modal */}
-      {selectedOrg && (() => {
-        const orgBatches = getOrgBatches(selectedOrg)
-        const filteredOrgBatches = orgBatches.filter(b => 
-          (b.product?.name || "").toLowerCase().includes(drugSearchQuery.toLowerCase()) ||
-          (b.product?.genericName || "").toLowerCase().includes(drugSearchQuery.toLowerCase()) ||
-          (b.batchNumber || "").toLowerCase().includes(drugSearchQuery.toLowerCase()) ||
-          (b.currentStatus || "").toLowerCase().includes(drugSearchQuery.toLowerCase())
-        )
-
-        return (
-          <Dialog open={!!selectedOrg} onOpenChange={() => setSelectedOrg(null)}>
-            <DialogContent className="max-w-4xl max-h-[88vh] flex flex-col p-6">
-              <DialogHeader className="pb-3 border-b border-gray-100 shrink-0">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    {getSectorBadge(selectedOrg.type)}
-                    <Badge variant="outline" className="text-emerald-700 bg-emerald-50 border-emerald-200">
-                      Active Regulated Node
-                    </Badge>
-                    <span className="text-xs font-mono text-gray-500">License: {selectedOrg.licenseNumber}</span>
-                  </div>
-                  <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
-                    <Button
-                      size="sm"
-                      variant={modalTab === "DRUGS" ? "default" : "ghost"}
-                      onClick={() => setModalTab("DRUGS")}
-                      className={`h-7 text-xs font-semibold ${modalTab === "DRUGS" ? "bg-emerald-700 text-white hover:bg-emerald-800" : "text-gray-600 hover:text-gray-900"}`}
-                    >
-                      <Pill className="w-3.5 h-3.5 mr-1" />
-                      Drug Passports ({orgBatches.length})
-                    </Button>
+      {selectedOrg && (
+        <Dialog open={!!selectedOrg} onOpenChange={() => setSelectedOrg(null)}>
+          <DialogContent className="max-w-4xl max-h-[88vh] flex flex-col p-6">
+            <DialogHeader className="pb-3 border-b border-gray-100 shrink-0">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  {getSectorBadge(selectedOrg.type)}
+                  <Badge variant="outline" className="text-emerald-700 bg-emerald-50 border-emerald-200">
+                    Active Regulated Node
+                  </Badge>
+                  <span className="text-xs font-mono text-gray-500">License: {selectedOrg.licenseNumber}</span>
+                </div>
+                <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
+                  <Button
+                    size="sm"
+                    variant={modalTab === "DRUGS" ? "default" : "ghost"}
+                    onClick={() => setModalTab("DRUGS")}
+                    className={`h-7 text-xs font-semibold ${modalTab === "DRUGS" ? "bg-emerald-700 text-white hover:bg-emerald-800" : "text-gray-600 hover:text-gray-900"}`}
+                  >
+                    <Pill className="w-3.5 h-3.5 mr-1" />
+                    Drug Passports ({selectedOrgBatches.length})
+                  </Button>
                     <Button
                       size="sm"
                       variant={modalTab === "DETAILS" ? "default" : "ghost"}
@@ -742,7 +753,7 @@ export function OrganizationsDirectory() {
                         />
                       </div>
                       <span className="text-xs font-medium text-gray-500 shrink-0">
-                        Showing {filteredOrgBatches.length} of {orgBatches.length} drugs
+                        Showing {filteredOrgBatches.length} of {selectedOrgBatches.length} drugs
                       </span>
                     </div>
 
@@ -782,7 +793,14 @@ export function OrganizationsDirectory() {
                                   {batch.currentQuantity.toLocaleString()} {batch.unit}
                                 </TableCell>
                                 <TableCell className="text-gray-600 font-mono text-[11px]">
-                                  {new Date(batch.expiryDate).toLocaleDateString("en-IN", { month: "short", year: "numeric" })}
+                                  {batch.expiryDate ? (() => {
+                                    try {
+                                      const d = new Date(batch.expiryDate);
+                                      return isNaN(d.getTime()) ? batch.expiryDate : d.toLocaleDateString("en-IN", { month: "short", year: "numeric" });
+                                    } catch {
+                                      return batch.expiryDate;
+                                    }
+                                  })() : "N/A"}
                                 </TableCell>
                                 <TableCell className="text-right">
                                   <Button
@@ -868,8 +886,7 @@ export function OrganizationsDirectory() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        )
-      })()}
+        )}
 
       {/* Onboard New Organization Modal Dialog */}
       <Dialog open={isOnboardOpen} onOpenChange={setIsOnboardOpen}>
