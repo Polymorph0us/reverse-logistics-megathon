@@ -27,9 +27,6 @@ dist-ssr
 target/
 *.class
 
-# Fabric Network
-fabric-network/organizations/
-fabric-network/channel-artifacts/
 
 # Local proxy
 powershell.cmd
