@@ -1,14 +1,13 @@
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom"
 import { useAuthStore } from "@/store/useAuthStore"
 import { useSharedStore } from "@/store/useSharedStore"
-import { LayoutDashboard, Package, AlertTriangle, FileText, LogOut, Activity, ShieldAlert, ShieldCheck, Bell, GitBranch, ScanLine, Truck, Flame, Building2, Plus } from "lucide-react"
+import { LayoutDashboard, Package, AlertTriangle, FileText, LogOut, Activity, ShieldAlert, ShieldCheck, Bell, GitBranch, ScanLine, Truck, Flame, Building2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export function DashboardLayout() {
   const { user, loginUser, logout } = useAuthStore()
   const notifications = useSharedStore(state => state.notifications)
-  const organizations = useSharedStore(state => state.organizations)
   const unreadCount = notifications.filter(n => !n.read).length
   const navigate = useNavigate()
   const location = useLocation()
@@ -16,22 +15,18 @@ export function DashboardLayout() {
   if (!user) return null
 
   const getNavItems = () => {
-    const orgsItem = { label: "4-Sector Directory", href: "/organizations", icon: Building2 }
-    
     switch (user.role) {
       case "RETAILER":
         return [
           { label: "Dashboard", href: "/retailer/dashboard", icon: LayoutDashboard },
           { label: "Inventory", href: "/retailer/inventory", icon: Package },
           { label: "Expiring Soon", href: "/retailer/expiring", icon: AlertTriangle },
-          orgsItem,
         ]
       case "DISTRIBUTOR":
         return [
           { label: "Dashboard", href: "/distributor/dashboard", icon: LayoutDashboard },
           { label: "Pending Returns", href: "/distributor/returns", icon: Package },
           { label: "Crate Consolidation", href: "/distributor/consolidation", icon: GitBranch },
-          orgsItem,
         ]
       case "MANUFACTURER":
         return [
@@ -39,24 +34,22 @@ export function DashboardLayout() {
           { label: "OEM Intake & Denaturing",href: "/manufacturer/intake",         icon: ScanLine },
           { label: "CBWTF Pickup Scheduler",href: "/manufacturer/cbwtf-scheduler", icon: Truck },
           { label: "Schedule Destruction", href: "/manufacturer/schedule-destruction", icon: FileText },
-          orgsItem,
         ]
       case "WASTE_FACILITY":
         return [
           { label: "Dashboard",         href: "/facility/dashboard",     icon: LayoutDashboard },
           { label: "Kiln Incineration", href: "/facility/kiln",          icon: Flame },
           { label: "Certificates",      href: "/facility/certificate",   icon: ShieldCheck },
-          orgsItem,
         ]
       case "REGULATOR":
       case "ADMIN":
         return [
           { label: "Dashboard", href: "/regulator/dashboard", icon: LayoutDashboard },
-          { label: "4-Sector Directory", href: "/regulator/organizations", icon: Building2 },
+          { label: "Organizations", href: "/regulator/organizations", icon: Building2 },
           { label: "Fraud Alerts", href: "/regulator/alerts", icon: ShieldAlert },
         ]
       default:
-        return [orgsItem]
+        return []
     }
   }
 
@@ -110,29 +103,7 @@ export function DashboardLayout() {
       </div>
 
       <main className="flex-1 overflow-hidden flex flex-col bg-gray-50/50">
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8">
-          <div className="flex items-center gap-3">
-            <Link 
-              to="/organizations" 
-              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors shadow-sm"
-            >
-              <Building2 className="w-3.5 h-3.5 text-emerald-600" />
-              <span>4-Sector Directory</span>
-              <span className="bg-emerald-200/80 text-emerald-900 text-[10px] px-1.5 py-0.5 rounded-full font-bold">
-                {organizations.length || 14}
-              </span>
-            </Link>
-
-            <Link 
-              to="/organizations?onboard=true" 
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors shadow-sm"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>+ Onboard Company</span>
-            </Link>
-          </div>
-
-          <div className="flex items-center space-x-6">
+        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-end px-8 space-x-6">
             <div className="flex items-center space-x-2">
               <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Quick Switch:</span>
               <Select value={user.role} onValueChange={(v) => loginUser(v as any)}>
@@ -157,7 +128,6 @@ export function DashboardLayout() {
                 </span>
               )}
             </button>
-          </div>
         </header>
         
         <div className="flex-1 overflow-auto p-8">
